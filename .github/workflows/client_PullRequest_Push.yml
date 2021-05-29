@@ -1,7 +1,7 @@
 on: [push, pull_request]
 
 jobs:
-  lint:
+  lint-client:
     runs-on: ubuntu-latest
     env:
       src-directory: ${{ github.workspace }}/src/client/
@@ -24,7 +24,7 @@ jobs:
       - run: npm run lint
         working-directory: ${{ env.src-directory }}
 
-  tsc:
+  tsc-client:
     runs-on: ubuntu-latest
     env:
       src-directory: ${{ github.workspace }}/src/client/
@@ -52,7 +52,6 @@ jobs:
     env:
       src-directory: ${{ github.workspace }}/src/client/
     name: Run tests on client
-    needs: [lint, tsc] # ensure tests are run only after eslint and tsc pass
     steps:
       - name: Cache node modules
         uses: actions/cache@v2
@@ -76,7 +75,7 @@ jobs:
     env:
       src-directory: ${{ github.workspace }}/src/client/
     name: Build client
-    needs: [test-client] # ensure tests are run only after eslint and tsc pass
+    needs: [test-client, lint-client, tsc-client]
     steps:
       - name: Cache node modules
         uses: actions/cache@v2
