@@ -41,8 +41,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "clean": "rmdir node_modules /S /Q && rmdir build /S /Q && del /Q package-lock.json && npm i",
-    "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{js,jsx,ts,tsx,css,json}",
+    "typescript-check": "tsc",
     "lint-fix": "eslint src/**/*.{js,jsx,ts,tsx,css,json} --fix"
   },
   "browserslist": {

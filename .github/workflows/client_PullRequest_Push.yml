@@ -1,0 +1,96 @@
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      src-directory: ${{ github.workspace }}/src/client/
+    name: Run eslint on client
+    steps:
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-lint-client-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - run: npm install
+        working-directory: ${{ env.src-directory }}
+      - run: npm run lint
+        working-directory: ${{ env.src-directory }}
+
+  tsc:
+    runs-on: ubuntu-latest
+    env:
+      src-directory: ${{ github.workspace }}/src/client/
+    name: Check typescript on client
+    steps:
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-tsc-client-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - run: npm install
+        working-directory: ${{ env.src-directory }}
+      - run: npm run typescript-check
+        working-directory: ${{ env.src-directory }}
+
+  test-client:
+    runs-on: ubuntu-latest
+    env:
+      src-directory: ${{ github.workspace }}/src/client/
+    name: Run tests on client
+    needs: [lint, tsc] # ensure tests are run only after eslint and tsc pass
+    steps:
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-test-client-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - run: npm install
+        working-directory: ${{ env.src-directory }}
+      - run: npm run test
+        working-directory: ${{ env.src-directory }}
+
+  build-client:
+    runs-on: ubuntu-latest
+    env:
+      src-directory: ${{ github.workspace }}/src/client/
+    name: Build client
+    needs: [test-client] # ensure tests are run only after eslint and tsc pass
+    steps:
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-build-client-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - run: npm install
+        working-directory: ${{ env.src-directory }}
+      - run: npm run build
+        working-directory: ${{ env.src-directory }}
