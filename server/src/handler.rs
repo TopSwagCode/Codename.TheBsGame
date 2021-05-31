@@ -1,7 +1,7 @@
 use crate::{ws, Client, Clients, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use warp::{http::StatusCode, reply::json, ws::Message, Reply};
+use warp::{http::StatusCode, reply::json, Reply};
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterRequest {
@@ -18,26 +18,6 @@ pub struct Event {
     topic: String,
     user_id: Option<usize>,
     message: String,
-}
-
-pub async fn publish_handler(body: Event, clients: Clients) -> Result<impl Reply> {
-    println!("Publishing Handler");
-    clients
-        .read()
-        .await
-        .iter()
-        .filter(|(_, client)| match body.user_id {
-            Some(v) => client.user_id == v,
-            None => true,
-        })
-        .filter(|(_, client)| client.topics.contains(&body.topic))
-        .for_each(|(_, client)| {
-            if let Some(sender) = &client.sender {
-                let _ = sender.send(Ok(Message::text(body.message.clone())));
-            }
-        });
-
-    Ok(StatusCode::OK)
 }
 
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
@@ -57,8 +37,7 @@ async fn register_client(id: String, user_id: usize, clients: Clients) {
     clients.write().await.insert(
         id,
         Client {
-            user_id,
-            topics: vec![String::from("cats")],
+            user_id,            
             sender: None,
         },
     );
