@@ -22,7 +22,6 @@ pub struct Event {
 
 pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
     let game_state = &game_state.read().await.units;    
-    println!("{:?}",&game_state);
     let json = json(&game_state);
     Ok(json)
 }
