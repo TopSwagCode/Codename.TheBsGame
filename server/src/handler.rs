@@ -1,4 +1,4 @@
-use crate::{ws, Client, Clients, Result};
+use crate::{ws, Client, Clients, GameStateRef, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use warp::{http::StatusCode, reply::json, Reply};
@@ -20,6 +20,14 @@ pub struct Event {
     message: String,
 }
 
+pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
+    let game_state = &game_state.read().await.units;    
+    println!("{:?}",&game_state);
+    let json = json(&game_state);
+    Ok(json)
+}
+
+
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
     let user_id = body.user_id;
     println!("Register Handler, user_id {}", user_id);
@@ -37,7 +45,7 @@ async fn register_client(id: String, user_id: usize, clients: Clients) {
     clients.write().await.insert(
         id,
         Client {
-            user_id,            
+            user_id,
             sender: None,
         },
     );
@@ -50,10 +58,20 @@ pub async fn unregister_handler(id: String, clients: Clients) -> Result<impl Rep
     Ok(StatusCode::OK)
 }
 
-pub async fn ws_handler(ws: warp::ws::Ws, id: String, clients: Clients) -> Result<impl Reply> {
+
+pub async fn ws_handler(
+    ws: warp::ws::Ws,
+    id: String,
+    clients: Clients,
+    game_state: GameStateRef,
+) -> Result<impl Reply> {
     let client = clients.read().await.get(&id).cloned();
     match client {
-        Some(c) => Ok(ws.on_upgrade(move |socket| ws::client_connection(socket, id, clients, c))),
+        Some(c) => {
+            Ok(ws.on_upgrade(move |socket| {
+                ws::client_connection(socket, id, clients, c, game_state)
+            }))
+        }
         None => Err(warp::reject::not_found()),
     }
 }
