@@ -1,7 +1,7 @@
-use crate::{ws, Client, Clients, Result};
+use crate::{ws, Client, Clients, GameStateRef, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use warp::{http::StatusCode, reply::json, ws::Message, Reply};
+use warp::{http::StatusCode, reply::json, Reply};
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterRequest {
@@ -20,25 +20,12 @@ pub struct Event {
     message: String,
 }
 
-pub async fn publish_handler(body: Event, clients: Clients) -> Result<impl Reply> {
-    println!("Publishing Handler");
-    clients
-        .read()
-        .await
-        .iter()
-        .filter(|(_, client)| match body.user_id {
-            Some(v) => client.user_id == v,
-            None => true,
-        })
-        .filter(|(_, client)| client.topics.contains(&body.topic))
-        .for_each(|(_, client)| {
-            if let Some(sender) = &client.sender {
-                let _ = sender.send(Ok(Message::text(body.message.clone())));
-            }
-        });
-
-    Ok(StatusCode::OK)
+pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
+    let game_state = &game_state.read().await.units;    
+    let json = json(&game_state);
+    Ok(json)
 }
+
 
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
     let user_id = body.user_id;
@@ -58,7 +45,6 @@ async fn register_client(id: String, user_id: usize, clients: Clients) {
         id,
         Client {
             user_id,
-            topics: vec![String::from("cats")],
             sender: None,
         },
     );
@@ -71,10 +57,20 @@ pub async fn unregister_handler(id: String, clients: Clients) -> Result<impl Rep
     Ok(StatusCode::OK)
 }
 
-pub async fn ws_handler(ws: warp::ws::Ws, id: String, clients: Clients) -> Result<impl Reply> {
+
+pub async fn ws_handler(
+    ws: warp::ws::Ws,
+    id: String,
+    clients: Clients,
+    game_state: GameStateRef,
+) -> Result<impl Reply> {
     let client = clients.read().await.get(&id).cloned();
     match client {
-        Some(c) => Ok(ws.on_upgrade(move |socket| ws::client_connection(socket, id, clients, c))),
+        Some(c) => {
+            Ok(ws.on_upgrade(move |socket| {
+                ws::client_connection(socket, id, clients, c, game_state)
+            }))
+        }
         None => Err(warp::reject::not_found()),
     }
 }

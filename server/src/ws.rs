@@ -1,16 +1,38 @@
-use crate::{Client, Clients};
+use crate::{
+    game::game_state::{Unit, UnitType},
+    Client, Clients, GameStateRef,
+};
 use futures::{FutureExt, StreamExt};
-use serde::Deserialize;
-use serde_json::from_str;
+use serde::{Deserialize};
+use serde_json::{from_str};
 use tokio::sync::mpsc;
+use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
 
 #[derive(Deserialize, Debug)]
-pub struct TopicsRequest {
-    topics: Vec<String>,
+pub struct CreateUnitRequest {
+    position: (f32, f32),
 }
 
-pub async fn client_connection(ws: WebSocket, id: String, clients: Clients, mut client: Client) {
+#[derive(Deserialize, Debug)]
+pub struct SetUnitRequest {
+    position: (f32, f32),
+    id: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub enum RequestType {
+    CreatUnit(CreateUnitRequest),
+    SetUnit(SetUnitRequest),
+}
+
+pub async fn client_connection(
+    ws: WebSocket,
+    id: String,
+    clients: Clients,
+    mut client: Client,
+    mut game_state: GameStateRef,
+) {
     let (client_ws_sender, mut client_ws_rcv) = ws.split();
     let (client_sender, client_rcv) = mpsc::unbounded_channel();
 
@@ -33,14 +55,14 @@ pub async fn client_connection(ws: WebSocket, id: String, clients: Clients, mut 
                 break;
             }
         };
-        client_msg(&id, msg, &clients).await;
+        client_msg(&id, msg, &clients, &mut game_state).await;
     }
 
     clients.write().await.remove(&id);
     println!("{} disconnected", id);
 }
 
-async fn client_msg(id: &str, msg: Message, clients: &Clients) {
+async fn client_msg(id: &str, msg: Message, clients: &Clients, game_state: &mut GameStateRef) {
     println!("received message from {}: {:?}", id, msg);
     let message = match msg.to_str() {
         Ok(v) => v,
@@ -50,17 +72,44 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients) {
     if message == "ping" || message == "ping\n" {
         return;
     }
+    use RequestType::*;
 
-    let topics_req: TopicsRequest = match from_str(&message) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("error while parsing message to topics request: {}", e);
+    let request = from_str(&message);
+    match request {
+        Ok(CreatUnit(CreateUnitRequest { position })) => {
+            let uuid = Uuid::new_v4().simple().to_string();
+            let units = &mut game_state.write().await.units;
+            units.insert(
+                uuid.clone(),
+                Unit {
+                    position: position,
+                    unit_type: UnitType::Normal,
+                    id: uuid,
+                },
+            );
+        }
+        Ok(SetUnit(SetUnitRequest { position, id })) => {
+            let units = &mut game_state.write().await.units;
+            match units.get_mut(&id) {
+                Some(unit) => {
+                    unit.position = position;
+                }
+                None => {
+                    eprintln!("Could not set position for unit, because it was not found: {}", id);
+                }
+            }
+        }
+        Err(e) => {            
+            let example_string = "{\"CreatUnit\":{\"position\":[10.0,15.0]}}";
+            //Send something like this {"CreatUnit":{"position":[10.0,15.0]}}
+            eprintln!("error parsing message: {} , try something like this\n {}", e, example_string); 
             return;
         }
     };
-
-    let mut locked = clients.write().await;
-    if let Some(v) = locked.get_mut(id) {
-        v.topics = topics_req.topics;
-    }
+    clients.read().await.iter().for_each(|c| match &c.1.sender {
+        Some(sender) => {
+            let _result = sender.send(Ok(msg.clone()));
+        }
+        None => {}
+    });
 }
