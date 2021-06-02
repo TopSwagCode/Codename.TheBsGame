@@ -18,6 +18,20 @@ interface GameState {
 	[unitId: string]: Unit
 }
 
+interface ConnectResponse {
+	url: string
+}
+
+type CreateUnitMessage = {
+	CreatUnit: { position: number[] }
+}
+
+type SetUnitMessage = {
+	SetUnit: { position: number[]; id: string }
+}
+
+type WebsocketMessage = CreateUnitMessage | SetUnitMessage
+
 class GameContainer extends PureComponent<Record<string, never>> {
 	private initialized = false
 
@@ -36,6 +50,8 @@ class GameContainer extends PureComponent<Record<string, never>> {
 	private well: Object3D | undefined
 
 	private tower: Object3D | undefined
+
+	private socket: WebSocket | undefined
 
 	private clock: THREE.Clock
 
@@ -63,7 +79,8 @@ class GameContainer extends PureComponent<Record<string, never>> {
 	componentDidMount(): void {
 		this.initGame()
 		window.addEventListener('resize', this.handleWindowResize)
-		this.fetchGameState()
+		this.fetchInitialGameState()
+		this.connectToWebsocket()
 	}
 
 	componentWillUnmount(): void {
@@ -80,7 +97,39 @@ class GameContainer extends PureComponent<Record<string, never>> {
 		this.renderer.setSize(window.innerWidth, window.innerHeight)
 	}
 
-	fetchGameState = (): void => {
+	connectToWebsocket = (): void => {
+		fetch('http://localhost:8000/register', {
+			method: 'POST',
+			mode: 'cors',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ user_id: 1 })
+		})
+			.then((r) => r.json())
+			.then((r: ConnectResponse) => r.url)
+			.then((url) => {
+				const socket = new WebSocket(url)
+				socket.onopen = (e) => {
+					this.socket = socket
+					socket.onmessage = this.onMessageRecived
+				}
+			})
+	}
+
+	onMessageRecived = (e: MessageEvent<any>): void => {
+		const msg: WebsocketMessage = JSON.parse(e.data)
+		if ((msg as CreateUnitMessage).CreatUnit) {
+			const createUnit = (msg as CreateUnitMessage).CreatUnit
+			this.loadModel('/models/tower/scene.gltf', createUnit.position[0], 0, createUnit.position[1], 0.01, (model) => {
+				this.tower = model
+				this.scene.add(this.tower)
+			})
+		}
+	}
+
+	fetchInitialGameState = (): void => {
 		fetch('http://localhost:8000/game')
 			.then((response) => response.json())
 			.then(this.loadGameState)
