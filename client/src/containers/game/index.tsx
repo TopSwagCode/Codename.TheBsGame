@@ -8,6 +8,16 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
 
+interface Unit {
+	position: number[]
+	// unit_type: UnitType,
+	id: string
+}
+
+interface GameState {
+	[unitId: string]: Unit
+}
+
 class GameContainer extends PureComponent<Record<string, never>> {
 	private initialized = false
 
@@ -53,6 +63,7 @@ class GameContainer extends PureComponent<Record<string, never>> {
 	componentDidMount(): void {
 		this.initGame()
 		window.addEventListener('resize', this.handleWindowResize)
+		this.fetchGameState()
 	}
 
 	componentWillUnmount(): void {
@@ -67,6 +78,21 @@ class GameContainer extends PureComponent<Record<string, never>> {
 		this.camera.aspect = window.innerWidth / window.innerHeight
 		this.camera.updateProjectionMatrix()
 		this.renderer.setSize(window.innerWidth, window.innerHeight)
+	}
+
+	fetchGameState = (): void => {
+		fetch('http://localhost:8000/game')
+			.then((response) => response.json())
+			.then(this.loadGameState)
+	}
+
+	loadGameState = (gameState: GameState): void => {
+		Object.values(gameState).forEach((unit) => {
+			this.loadModel('/models/tower/scene.gltf', unit.position[0], 0, unit.position[1], 0.01, (model) => {
+				this.tower = model
+				this.scene.add(this.tower)
+			})
+		})
 	}
 
 	initGame = (): void => {
