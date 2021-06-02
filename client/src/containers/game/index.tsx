@@ -65,6 +65,8 @@ class GameContainer extends PureComponent<Record<string, never>> {
 
 	private lastRender = Date.now()
 
+	private raycaster = new THREE.Raycaster()
+
 	constructor(props: Record<string, never>) {
 		super(props)
 		this.renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -111,14 +113,14 @@ class GameContainer extends PureComponent<Record<string, never>> {
 			.then((r: ConnectResponse) => r.url)
 			.then((url) => {
 				const socket = new WebSocket(url)
-				socket.onopen = (e) => {
+				socket.onopen = () => {
 					this.socket = socket
 					socket.onmessage = this.onMessageRecived
 				}
 			})
 	}
 
-	onMessageRecived = (e: MessageEvent<any>): void => {
+	onMessageRecived = (e: MessageEvent): void => {
 		const msg: WebsocketMessage = JSON.parse(e.data)
 		if ((msg as CreateUnitMessage).CreatUnit) {
 			const createUnit = (msg as CreateUnitMessage).CreatUnit
@@ -181,6 +183,22 @@ class GameContainer extends PureComponent<Record<string, never>> {
 			// 	transparent: true
 			// } as THREE.Material
 			this.scene.add(this.grid)
+			this.raycaster = new THREE.Raycaster()
+			this.gameContainer.addEventListener('click', (e) => {
+				if (this.gameContainer) {
+					const { clientWidth, clientHeight, offsetTop, offsetLeft } = this.gameContainer
+					const x = ((e.clientX - offsetLeft) / clientWidth) * 2 - 1
+					const y = -((e.clientY - offsetTop) / clientHeight) * 2 + 1
+
+					this.raycaster.setFromCamera({ x, y }, this.camera)
+					const intersects = this.raycaster.intersectObject(this.grid)
+					if (intersects.length > 0) {
+						const { point } = intersects[0]
+						this.socket?.send(JSON.stringify({ CreatUnit: { position: [point.x, point.z] } }))
+					}
+				}
+			})
+
 			// loader
 			const dracoLoader = new DRACOLoader()
 			dracoLoader.setDecoderPath('/examples/js/libs/draco/')
