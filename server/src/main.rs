@@ -30,7 +30,8 @@ async fn main() {
     let game_state = Arc::new(RwLock::new(GameState::default()));
 
     let game = warp::path("game");
-    let game_route = game.and(warp::get())
+    let game_route = game
+        .and(warp::get())
         .and(with_game_state(game_state.clone()))
         .and_then(handler::get_game_state_handler);
 
@@ -52,12 +53,16 @@ async fn main() {
         .and(with_clients(clients))
         .and(with_game_state(game_state))
         .and_then(handler::ws_handler);
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_headers(vec!["Access-Control-Request-Headers","Content-Type","Accept","*"])
+        .allow_methods(vec!["POST", "GET", "DELETE"]);
 
     let routes = health_route
         .or(game_route)
         .or(register_routes)
         .or(ws_route)
-        .with(warp::cors().allow_any_origin());
+        .with(cors);
     let address = ([127, 0, 0, 1], 8000);
     println!("Listening on {:?}", address);
     warp::serve(routes).run(address).await;
