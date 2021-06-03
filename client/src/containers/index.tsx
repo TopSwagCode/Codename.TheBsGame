@@ -8,7 +8,7 @@ class App extends PureComponent {
 		return (
 			<div className="App">
 				<BrowserRouter>
-					<Route path="/">
+					<Route path="/" exact>
 						<HomeContainer />
 					</Route>
 					<Route path="/game">
