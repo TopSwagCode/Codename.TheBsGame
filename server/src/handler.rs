@@ -3,10 +3,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use warp::{http::StatusCode, reply::json, Reply};
 
-#[derive(Deserialize, Debug)]
-pub struct RegisterRequest {
-    user_id: usize,
-}
 
 #[derive(Serialize, Debug)]
 pub struct RegisterResponse {
@@ -14,11 +10,10 @@ pub struct RegisterResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Event {
-    topic: String,
-    user_id: Option<usize>,
-    message: String,
+pub struct RegisterRequest {
+    user_id: usize,
 }
+
 
 pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
     let game_state = &game_state.read().await.units;    
