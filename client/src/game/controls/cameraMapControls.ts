@@ -1,7 +1,7 @@
 import { MOUSE, PerspectiveCamera, TOUCH } from 'three'
-import OrbitControls from './OrbitControls'
+import CameraOrbitControls from './cameraOrbitControls'
 
-class MapControls extends OrbitControls {
+class CameraMapControls extends CameraOrbitControls {
 	constructor(camera: PerspectiveCamera, domElement: HTMLElement) {
 		super(camera, domElement)
 
@@ -14,4 +14,4 @@ class MapControls extends OrbitControls {
 		this.touches.TWO = TOUCH.DOLLY_ROTATE
 	}
 }
-export default MapControls
+export default CameraMapControls

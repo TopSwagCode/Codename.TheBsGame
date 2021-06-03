@@ -10,7 +10,7 @@ export interface LoadedGameModel extends GameModel {
 	object: Object3D
 }
 
-interface LoadedModels {
+export interface LoadedModels {
 	[property: string]: LoadedGameModel
 }
 class ModelLoader {
@@ -18,7 +18,7 @@ class ModelLoader {
 
 	private dracoLoader: DRACOLoader
 
-	private loadedModels: LoadedModels
+	public loadedModels: LoadedModels
 
 	constructor() {
 		this.gltfLoader = new GLTFLoader()

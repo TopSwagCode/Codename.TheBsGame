@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import Game from '../../game'
+import BasicUI from './components/basicUI'
 
 class GameContainer extends PureComponent<Record<string, never>> {
 	private initialized = false
@@ -20,6 +21,12 @@ class GameContainer extends PureComponent<Record<string, never>> {
 		}
 	}
 
+	handleActionbarButtonClicked = (event: MouseEvent, button: string): void => {
+		if (this.game) {
+			this.game.handleActionbarButtonClicked(button)
+		}
+	}
+
 	render = (): JSX.Element => {
 		return (
 			<div className="game">
@@ -29,6 +36,7 @@ class GameContainer extends PureComponent<Record<string, never>> {
 						this.gameContainer = gameContainer
 					}}
 				/>
+				<BasicUI onClickButton={this.handleActionbarButtonClicked} />
 			</div>
 		)
 	}

@@ -8,7 +8,7 @@ import { EventDispatcher, Matrix4, MOUSE, PerspectiveCamera, Quaternion, Spheric
 const changeEvent = { type: 'change' }
 const startEvent = { type: 'start' }
 const endEvent = { type: 'end' }
-interface IOrbitControls {
+interface ICameraOrbitControls {
 	camera: PerspectiveCamera
 	domElement: HTMLElement
 
@@ -64,7 +64,7 @@ interface IOrbitControls {
 	getAzimuthalAngle(): number
 }
 
-class OrbitControls extends EventDispatcher implements IOrbitControls {
+class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControls {
 	camera: PerspectiveCamera
 
 	domElement: HTMLElement
@@ -1113,4 +1113,4 @@ class OrbitControls extends EventDispatcher implements IOrbitControls {
 	}
 }
 
-export default OrbitControls
+export default CameraOrbitControls

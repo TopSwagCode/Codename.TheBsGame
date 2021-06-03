@@ -12,6 +12,8 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 
 	public worldData: IMoveableGameObjectWorldData
 
+	public destinationReached?: (obj: this) => void
+
 	protected renderedWorldData: IMoveableGameObjectWorldData
 
 	constructor(key: string, model: Object3D, worldData: IMoveableGameObjectWorldData = new MoveableGameObjectWorldData()) {
@@ -25,7 +27,15 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 		updateData('destinationPosition')
 
 		const { worldData } = this
-		worldData.position = this.move(worldData.position, worldData.destinationPosition, delta)
+		if (worldData.position.x !== worldData.destinationPosition.x || worldData.position.z !== worldData.destinationPosition.z) {
+			worldData.position = this.move(worldData.position, worldData.destinationPosition, delta)
+			if (worldData.position.x === worldData.destinationPosition.x && worldData.position.z === worldData.destinationPosition.z) {
+				if (this.destinationReached) {
+					this.destinationReached(this)
+				}
+			}
+		}
+
 		super.update(time, delta)
 		// updateData('position')
 	}

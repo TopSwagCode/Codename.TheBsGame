@@ -1,24 +1,21 @@
 import { Intersection, Object3D, Raycaster, Scene } from 'three'
-import GameStateDataService from './services/gameStateDataService'
 import { IGameObject } from './gameObjects/gameObject'
 import { ICordinates } from './gameObjects/gameObjectWorldData'
 import MoveableGameObject from './gameObjects/moveableGameObject'
+import { IUpdate } from './gameRenderer'
 import WorldEnviroment, { WorldEnviromentDebugEnum } from './worldEnviroment'
 
-class GameWorld {
+class GameWorld implements IUpdate {
 	private scene: Scene
 
 	public gameObjects: IGameObject[]
 
 	private worldEnviroment: WorldEnviroment
 
-	private gameStateDataService: GameStateDataService
-
 	constructor(scene: Scene) {
 		this.scene = scene
 		this.worldEnviroment = new WorldEnviroment(scene)
 		this.gameObjects = []
-		this.gameStateDataService = new GameStateDataService()
 	}
 
 	public initialize = (): void => {

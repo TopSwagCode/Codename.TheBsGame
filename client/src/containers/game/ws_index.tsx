@@ -8,6 +8,28 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { MapControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
 
+interface Unit {
+	position: number[]
+	// unit_type: UnitType,
+	id: string
+}
+
+interface GameState {
+	[unitId: string]: Unit
+}
+
+interface ConnectResponse {
+	url: string
+}
+
+type CreateUnitMessage = {
+	CreatUnit: { position: number[] }
+}
+
+type SetUnitMessage = {
+	SetUnit: { position: number[]; id: string }
+}
+
 type WebsocketMessage = CreateUnitMessage | SetUnitMessage
 
 class GameContainer extends PureComponent<Record<string, never>> {
@@ -28,6 +50,8 @@ class GameContainer extends PureComponent<Record<string, never>> {
 	private well: Object3D | undefined
 
 	private tower: Object3D | undefined
+
+	private socket: WebSocket | undefined
 
 	private clock: THREE.Clock
 
@@ -105,6 +129,12 @@ class GameContainer extends PureComponent<Record<string, never>> {
 				this.scene.add(this.tower)
 			})
 		}
+	}
+
+	fetchInitialGameState = (): void => {
+		fetch('http://localhost:8000/game')
+			.then((response) => response.json())
+			.then(this.loadGameState)
 	}
 
 	loadGameState = (gameState: GameState): void => {

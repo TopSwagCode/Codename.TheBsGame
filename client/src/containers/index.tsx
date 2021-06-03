@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import { BrowserRouter, Route } from 'react-router-dom'
-import GameContainer from './game/ws_index'
+import GameContainer from './game/index'
 import HomeContainer from './home'
 
 class App extends PureComponent {
