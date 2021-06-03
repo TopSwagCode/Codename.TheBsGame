@@ -4,7 +4,7 @@ jobs:
   lint-client:
     runs-on: ubuntu-latest
     env:
-      src-directory: ${{ github.workspace }}/src/client/
+      src-directory: ${{ github.workspace }}/client/
     name: Run eslint on client
     steps:
       - name: Cache node modules
@@ -27,7 +27,7 @@ jobs:
   tsc-client:
     runs-on: ubuntu-latest
     env:
-      src-directory: ${{ github.workspace }}/src/client/
+      src-directory: ${{ github.workspace }}/client/
     name: Check typescript on client
     steps:
       - name: Cache node modules
@@ -50,7 +50,7 @@ jobs:
   test-client:
     runs-on: ubuntu-latest
     env:
-      src-directory: ${{ github.workspace }}/src/client/
+      src-directory: ${{ github.workspace }}/client/
     name: Run tests on client
     steps:
       - name: Cache node modules
@@ -73,7 +73,7 @@ jobs:
   build-client:
     runs-on: ubuntu-latest
     env:
-      src-directory: ${{ github.workspace }}/src/client/
+      src-directory: ${{ github.workspace }}/client/
     name: Build client
     needs: [test-client, lint-client, tsc-client]
     steps:
