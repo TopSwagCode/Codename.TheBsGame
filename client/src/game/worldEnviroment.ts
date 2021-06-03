@@ -8,7 +8,9 @@ export enum WorldEnviromentDebugEnum {
 class WorldEnviroment {
 	private scene: Scene
 
-	private debugOptions: { [key in keyof typeof WorldEnviromentDebugEnum]?: boolean }
+	private debugOptions: {
+		[key in keyof typeof WorldEnviromentDebugEnum]?: boolean
+	}
 
 	constructor(scene: Scene) {
 		this.scene = scene

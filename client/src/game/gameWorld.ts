@@ -1,4 +1,5 @@
 import { Intersection, Object3D, Raycaster, Scene } from 'three'
+import GameStateDataService from './services/gameStateDataService'
 import { IGameObject } from './gameObjects/gameObject'
 import { ICordinates } from './gameObjects/gameObjectWorldData'
 import MoveableGameObject from './gameObjects/moveableGameObject'
@@ -11,10 +12,13 @@ class GameWorld {
 
 	private worldEnviroment: WorldEnviroment
 
+	private gameStateDataService: GameStateDataService
+
 	constructor(scene: Scene) {
 		this.scene = scene
 		this.worldEnviroment = new WorldEnviroment(scene)
 		this.gameObjects = []
+		this.gameStateDataService = new GameStateDataService()
 	}
 
 	public initialize = (): void => {
@@ -41,7 +45,11 @@ class GameWorld {
 			.forEach((go) => {
 				if (go instanceof MoveableGameObject) {
 					const { worldData } = go
-					worldData.destinationPosition = { ...worldData.destinationPosition, x: destination.x, z: destination.z }
+					worldData.destinationPosition = {
+						...worldData.destinationPosition,
+						x: destination.x,
+						z: destination.z
+					}
 				}
 			})
 	}
