@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import { BrowserRouter, Route } from 'react-router-dom'
-import GameContainer from './game'
+import GameContainer from './game/index'
 import HomeContainer from './home'
 
 class App extends PureComponent {
@@ -8,7 +8,7 @@ class App extends PureComponent {
 		return (
 			<div className="App">
 				<BrowserRouter>
-					<Route path="/">
+					<Route path="/" exact>
 						<HomeContainer />
 					</Route>
 					<Route path="/game">
