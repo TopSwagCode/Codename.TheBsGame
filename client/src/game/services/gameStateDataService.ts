@@ -61,7 +61,13 @@ class GameStateDataService {
 		this.socket?.send(JSON.stringify({ SetUnit: { position: [x, z], id } }))
 	}
 
-	public fetchInitialGameState = (): Promise<GameState> => fetch(`${this.apiUri}/game`).then<GameState>((response) => response.json())
+	public fetchInitialGameState = (): Promise<GameState> =>
+		new Promise<GameState>((resolve, reject) => {
+			fetch(`${this.apiUri}/game`)
+				.then((response) => response.json())
+				.then((state: GameState) => resolve(state))
+				.catch(() => reject())
+		})
 
 	public addMessageHandler: AddMessageHandler = (type, handler) => {
 		this.messageHandlers = [{ type, handler }]
