@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 export interface GameModel {
 	path: string
 	name: string
+	onLoaded?: (model: LoadedGameModel) => void
 }
 export interface LoadedGameModel extends GameModel {
 	object: Object3D
@@ -40,6 +41,9 @@ class ModelLoader {
 					[loadedModel.name]: loadedModel
 				}
 				loadCount += 1
+				if (m.onLoaded) {
+					m.onLoaded(loadedModel)
+				}
 				if (loadCount === models.length) {
 					completeCallback(this.loadedModels)
 				}

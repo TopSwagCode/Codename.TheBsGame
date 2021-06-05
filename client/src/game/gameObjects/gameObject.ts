@@ -1,4 +1,5 @@
-import { BufferGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry } from 'three'
+import { Group, Mesh, MeshBasicMaterial, Object3D, RingGeometry } from 'three'
+import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer'
 import GameObjectWorldData, { IGameObjectWorldData } from './gameObjectWorldData'
 
 export interface IGameObject {
@@ -12,7 +13,11 @@ class GameObject implements IGameObject {
 
 	public model: Object3D
 
-	public selectedCircleMesh: Mesh
+	public textContainer: HTMLDivElement
+
+	public lastTextUpdate = 0
+
+	public selectedCircleMesh: Mesh<RingGeometry, MeshBasicMaterial>
 
 	public worldData: IGameObjectWorldData
 
@@ -25,29 +30,31 @@ class GameObject implements IGameObject {
 
 		const geometry = new RingGeometry(3.5, 3.6, 32)
 		const material = new MeshBasicMaterial({ color: 0x3336699 })
-		this.selectedCircleMesh = new Mesh(geometry, material)
+		this.selectedCircleMesh = new Mesh<RingGeometry, MeshBasicMaterial>(geometry, material)
 		this.selectedCircleMesh.rotation.x = -Math.PI / 2
 		this.selectedCircleMesh.position.y = 0
-		this.selectedCircleMesh.visible = this.worldData.selected
+		this.selectedCircleMesh.visible = false
+
+		this.textContainer = document.createElement('div')
+		this.textContainer.className = 'text-label'
+		this.textContainer.style.marginTop = '-1em'
+		const textLabel = new CSS2DObject(this.textContainer)
+		textLabel.position.set(0, 8, 0)
+
 		const newGroup = new Group()
+		newGroup.add(textLabel)
 		newGroup.add(this.selectedCircleMesh)
-		newGroup.add(model)
+		newGroup.add(model.clone())
 		newGroup.userData = {
 			gameObjectKey: key
 		}
 		this.model = newGroup
 	}
 
-	private setOpacity = (opacity: number): void => {
-		this.model.traverse((m) => {
-			const mesh = m as Mesh<BufferGeometry, MeshStandardMaterial>
-			if (mesh.isMesh) {
-				if (mesh.material.isMaterial && mesh.material.opacity !== opacity) {
-					mesh.material.opacity = opacity
-					mesh.material.transparent = true
-				}
-			}
-		})
+	private circle = (show: boolean, event: 'highlighted' | 'selected'): void => {
+		this.selectedCircleMesh.visible = show
+		if (event === 'highlighted') this.selectedCircleMesh.material.color.setHex(0x333333)
+		if (event === 'selected') this.selectedCircleMesh.material.color.setHex(0x336699)
 	}
 
 	protected updateDataBase =
@@ -72,6 +79,9 @@ class GameObject implements IGameObject {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	public update(time: number, delta: number): void {
+		if (!this.worldData.isDirty) {
+			return
+		}
 		const updateData = this.updateData<IGameObjectWorldData>()
 		updateData('scale', (scale) => {
 			this.model.scale.setScalar(scale)
@@ -82,23 +92,22 @@ class GameObject implements IGameObject {
 			this.model.position.z = newPosition.z
 		})
 
-		updateData('selected', (newSelection) => {
-			this.selectedCircleMesh.visible = newSelection
+		updateData('selected', (selected) => {
+			this.circle(selected || this.worldData.highlighted, 'selected')
 		})
 		updateData('rotation', (newRotation) => {
 			this.model.rotation.x = newRotation.x
 			this.model.rotation.y = newRotation.y
 			this.model.rotation.z = newRotation.z
 		})
-		updateData('highlighted', (newHighlighted) => {
-			if (newHighlighted) {
-				this.setOpacity(0.7)
-				this.selectedCircleMesh.visible = newHighlighted
-			} else {
-				this.selectedCircleMesh.visible = this.worldData.selected
-				this.setOpacity(1)
-			}
+		updateData('highlighted', (highlighted) => {
+			this.circle(highlighted || this.worldData.selected, 'highlighted')
 		})
+		if (this.lastTextUpdate + 100 <= time || this.lastTextUpdate === 0) {
+			this.textContainer.innerHTML = `renderTime: ${time.toString()}<br />`
+			this.lastTextUpdate = time
+		}
+		this.worldData.isDirty = false
 	}
 }
 export default GameObject

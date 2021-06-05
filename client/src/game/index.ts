@@ -1,6 +1,6 @@
-import { Material, Mesh, Object3D, PerspectiveCamera, Scene } from 'three'
+import { PerspectiveCamera, Scene } from 'three'
 import { v4 as uuid } from 'uuid'
-import ModelLoader, { LoadedGameModel } from './loaders/modelLoader'
+import ModelLoader, { LoadedGameModel, LoadedModels } from './loaders/modelLoader'
 import GameObject, { IGameObject } from './gameObjects/gameObject'
 import MoveableGameObject from './gameObjects/moveableGameObject'
 import GameStateDataService from './services/gameStateDataService'
@@ -8,6 +8,7 @@ import { CreateUnitMessage, SetUnitMessage } from './services/models'
 import GameWorld from './gameWorld'
 import GameRenderer from './gameRenderer'
 import GameControls from './controls/gameControls'
+import Object3DHelper from './helpers/object3dHelper'
 
 class Game {
 	private scene: Scene
@@ -93,8 +94,17 @@ class Game {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	public handleActionbarButtonClicked = (button: string): void => {
 		this.gameStateDataService.createUnit(10, 10)
-
-		this.gameWorld.addGameObject(this.createMoveableTower(`tower_${uuid()}`, 10, 10))
+		let gameObject: IGameObject
+		switch (button) {
+			case 'well':
+				gameObject = this.createMoveableWell(`${button}_${uuid()}`, 10, 10)
+				break
+			default:
+			case 'tower':
+				gameObject = this.createMoveableTower(`${button}_${uuid()}`, 10, 10)
+				break
+		}
+		this.gameWorld.addGameObject(gameObject)
 	}
 
 	private loadModels = (): void => {
@@ -102,11 +112,13 @@ class Game {
 			[
 				{
 					name: 'tower',
-					path: '/assets/models/tower/scene.gltf'
+					path: '/assets/models/tower/scene.gltf',
+					onLoaded: (tower) => tower.object.scale.setScalar(0.03)
 				},
 				{
 					name: 'well',
-					path: '/assets/models/well/scene.gltf'
+					path: '/assets/models/well/scene.gltf',
+					onLoaded: (well) => well.object.scale.setScalar(0.3)
 				}
 			],
 			() => {
@@ -116,7 +128,7 @@ class Game {
 	}
 
 	private createGameObject = (model: LoadedGameModel, posX: number, posZ: number, scale: number): IGameObject => {
-		const gameObj = new GameObject(`${model.name}_${uuid()}`, this.cloneModelCreateObject3D(model.object, scale))
+		const gameObj = new GameObject(`${model.name}_${uuid()}`, model.object)
 		// gameObj.worldData.scale = scale
 		gameObj.worldData.receiveShadow = true
 		gameObj.worldData.castShadow = true
@@ -130,9 +142,13 @@ class Game {
 		this.gameStateDataService.setUnit(obj.key, obj.worldData.position.x, obj.worldData.position.z)
 	}
 
-	private createMoveableTower = (id: string, posX: number, posZ: number): IGameObject => {
-		const model = this.modelLoader.loadedModels.tower
-		const gameObj = new MoveableGameObject(id, this.cloneModelCreateObject3D(model.object, 0.03))
+	private createMoveableTower = (id: string, posX: number, posZ: number): IGameObject => this.createMoveableGameObject('tower', id, posX, posZ)
+
+	private createMoveableWell = (id: string, posX: number, posZ: number): IGameObject => this.createMoveableGameObject('well', id, posX, posZ)
+
+	private createMoveableGameObject = (modelKey: keyof LoadedModels, id: string, posX: number, posZ: number): IGameObject => {
+		const model = this.modelLoader.loadedModels[modelKey]
+		const gameObj = new MoveableGameObject(id, Object3DHelper.setShadows(model.object))
 		gameObj.destinationReached = this.handleGameObjectReachedDestination
 		gameObj.worldData.receiveShadow = true
 		gameObj.worldData.castShadow = true
@@ -140,41 +156,6 @@ class Game {
 		gameObj.worldData.position.x = posX
 		gameObj.worldData.position.z = posZ
 		return gameObj
-	}
-
-	private createMoveableGameObject = (model: LoadedGameModel, posX: number, posZ: number, scale: number): IGameObject => {
-		const gameObj = new MoveableGameObject(`${model.name}_${uuid()}`, this.cloneModelCreateObject3D(model.object, scale))
-		// gameObj.worldData.scale = scale
-		gameObj.worldData.receiveShadow = true
-		gameObj.worldData.castShadow = true
-		gameObj.worldData.position.y = 0.1
-		gameObj.worldData.position.x = posX
-		gameObj.worldData.position.z = posZ
-		return gameObj
-	}
-
-	private cloneModelCreateObject3D = (object: Object3D, scale: number, castShadow = true, receiveShadow = true): Object3D => {
-		const newObject = object.clone(true)
-		newObject.traverse((m) => {
-			const mesh = m as Mesh
-			mesh.castShadow = castShadow
-			mesh.receiveShadow = receiveShadow
-			if (mesh.isMesh) {
-				mesh.material = this.cloneMaterial(mesh.material)
-			}
-		})
-		newObject.scale.setScalar(scale)
-		return newObject
-	}
-
-	private cloneMaterial = (material: Material | Material[]): Material | Material[] => {
-		let newMaterial = material
-		if (Array.isArray(newMaterial)) {
-			newMaterial = newMaterial.filter((im) => im.isMaterial).map((m) => m.clone())
-		} else if (newMaterial.isMaterial) {
-			newMaterial = newMaterial.clone()
-		}
-		return newMaterial
 	}
 }
 

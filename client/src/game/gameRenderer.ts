@@ -1,6 +1,8 @@
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { Clock, PerspectiveCamera, Scene, sRGBEncoding, WebGLRenderer } from 'three'
 
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+
 export interface IUpdate {
 	update: (timer: number, delta: number) => void
 }
@@ -12,6 +14,8 @@ class GameRenderer {
 	private container: HTMLElement
 
 	private renderer: WebGLRenderer
+
+	private labelRenderer: CSS2DRenderer
 
 	private clock: Clock
 
@@ -30,6 +34,7 @@ class GameRenderer {
 		this.renderer = new WebGLRenderer({ antialias: true })
 		this.clock = new Clock()
 		this.updateTargets = []
+		this.labelRenderer = new CSS2DRenderer()
 		this.stats = Stats()
 	}
 
@@ -44,8 +49,13 @@ class GameRenderer {
 		// this.renderer.toneMapping = ACESFilmicToneMapping
 		// this.renderer.toneMappingExposure = 0.85
 
+		this.labelRenderer.setSize(window.innerWidth, window.innerHeight)
+		this.labelRenderer.domElement.style.position = 'absolute'
+		this.labelRenderer.domElement.style.top = '0px'
+
 		window.addEventListener('resize', this.handleWindowResize)
 		this.container.appendChild(this.renderer.domElement)
+		this.container.appendChild(this.labelRenderer.domElement)
 		this.container.appendChild(this.stats.dom)
 	}
 
@@ -53,6 +63,7 @@ class GameRenderer {
 		this.camera.aspect = window.innerWidth / window.innerHeight
 		this.camera.updateProjectionMatrix()
 		this.renderer.setSize(window.innerWidth, window.innerHeight)
+		this.labelRenderer.setSize(window.innerWidth, window.innerHeight)
 	}
 
 	public addUpdateTarget = (updateTarget: IUpdate): void => {
@@ -74,6 +85,7 @@ class GameRenderer {
 			this.stats.update()
 			this.lastRender = now - (lastRenderDiff % interval)
 			this.renderer.render(this.scene, this.camera)
+			this.labelRenderer.render(this.scene, this.camera)
 		}
 		requestAnimationFrame(this.renderLoop)
 	}
