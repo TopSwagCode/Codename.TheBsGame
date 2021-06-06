@@ -80,6 +80,6 @@ jobs:
           environment_name: ${{env.AWS_ENVIROMENT_NAME}}
           region: eu-north-1
           version_label: ${{ env.VERSION }}
-          deployment_package: ${{ github.workspace }}/${{ env.APPLIKATION_NAME }}_${{ env.VERSION }}_deploy.zip
+          # deployment_package: ${{ github.workspace }}/${{ env.APPLIKATION_NAME }}_${{ env.VERSION }}_deploy.zip
           wait_for_deployment: false
           wait_for_environment_recovery: 0

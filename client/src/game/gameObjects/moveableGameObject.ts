@@ -41,7 +41,7 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 		}
 	}
 
-	private getDistanceToMove = (source: number, destination: number, delta: number, log = false): number => {
+	private getDistanceToMove = (source: number, destination: number, delta: number): number => {
 		let newPostion: number = source
 		let moveDistance = delta * this.movementSpeed
 		const diff = Math.abs(destination - source)
@@ -56,9 +56,6 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 		}
 		if (source < destination) {
 			newPostion = source + moveDistance
-		}
-		if (log) {
-			window.logC({ newPostion, diff, moveDistance, source, destination }, 100)
 		}
 		return newPostion
 	}

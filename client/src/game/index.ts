@@ -1,5 +1,4 @@
 import { PerspectiveCamera, Scene } from 'three'
-import { v4 as uuid } from 'uuid'
 import ModelLoader, { LoadedModels } from './loaders/modelLoader'
 import { IGameObject } from './gameObjects/gameObject'
 import MoveableGameObject from './gameObjects/moveableGameObject'
@@ -98,7 +97,6 @@ class Game {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	public handleActionbarButtonClicked = (button: string): void => {
-		console.log('handleActionbarButtonClicked', button)
 		this.gameStateDataService.createUnit(10, 10)
 	}
 

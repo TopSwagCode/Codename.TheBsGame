@@ -87,7 +87,6 @@ class GameStateDataService {
 
 	private onMessageRecived = (e: MessageEvent): void => {
 		const msg: WebsocketMessage = JSON.parse(e.data)
-		console.log('onMessageRecived', e)
 		if ((msg as CreateUnitResponse).CreatUnit) {
 			this.notifyHandlers('CreatUnit', msg)
 		}
