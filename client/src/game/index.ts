@@ -120,6 +120,7 @@ class Game {
 		)
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	private createGameObject = (model: LoadedGameModel, posX: number, posZ: number, scale: number): IGameObject => {
 		const gameObj = new GameObject(`${model.name}_${uuid()}`, model.object)
 		// gameObj.worldData.scale = scale
