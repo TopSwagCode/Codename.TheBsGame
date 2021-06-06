@@ -32,26 +32,12 @@ class GameWorld implements IUpdate {
 		this.gameObjects = [...this.gameObjects, gameObject]
 	}
 
-	public setGameObject = (id: string, prop: keyof IGameObjectWorldData, value: IGameObjectWorldData[typeof prop] | Partial<IGameObjectWorldData[typeof prop]>): void => {
+	public setGameObject = <K extends keyof IGameObjectWorldData>(id: string, prop: K, value: IGameObjectWorldData[K]): void => {
 		this.gameObjects
 			.filter((x) => x.key === id)
 			.forEach((g) => {
 				const gameObject = g
-				const worldDataValue = g.worldData[prop]
-				if (typeof worldDataValue === 'object' && typeof value === 'object') {
-					gameObject.worldData = {
-						...g.worldData,
-						[prop]: {
-							...worldDataValue,
-							...value
-						}
-					}
-				} else {
-					gameObject.worldData = {
-						...g.worldData,
-						[prop]: value
-					}
-				}
+				gameObject.worldData[prop] = value
 			})
 	}
 

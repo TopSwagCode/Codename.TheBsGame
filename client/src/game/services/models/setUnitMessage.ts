@@ -1,5 +1,7 @@
+import Unit from './unit'
+
 type SetUnitMessage = {
-	SetUnit: { position: number[]; id: string }
+	SetUnit: Unit
 }
 
 export default SetUnitMessage

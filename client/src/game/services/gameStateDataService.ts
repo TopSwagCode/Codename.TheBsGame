@@ -1,8 +1,8 @@
-import { ConnectResponse, CreateUnitMessage, GameState } from './models'
+import { ConnectResponse, CreateUnitRequest, CreateUnitResponse, GameState } from './models'
 import SetUnitMessage from './models/setUnitMessage'
 
 interface WebsocketMessages {
-	CreateUnit: CreateUnitMessage
+	CreatUnit: CreateUnitResponse
 	SetUnit: SetUnitMessage
 }
 
@@ -62,7 +62,7 @@ class GameStateDataService {
 		})
 
 	public createUnit = (x: number, z: number): void => {
-		this.socket?.send(JSON.stringify({ CreatUnit: { position: [x, z] } }))
+		this.socket?.send(JSON.stringify({ CreatUnit: { position: [x, z] } } as CreateUnitRequest))
 	}
 
 	public setUnit = (id: string, x: number, z: number): void => {
@@ -78,7 +78,7 @@ class GameStateDataService {
 		})
 
 	public addMessageHandler: AddMessageHandler = (type, handler) => {
-		this.messageHandlers = [{ type, handler }]
+		this.messageHandlers = [...this.messageHandlers, { type, handler }]
 	}
 
 	private notifyHandlers = (type: WebsocketMessageType, message: WebsocketMessage): void => {
@@ -87,8 +87,9 @@ class GameStateDataService {
 
 	private onMessageRecived = (e: MessageEvent): void => {
 		const msg: WebsocketMessage = JSON.parse(e.data)
-		if ((msg as CreateUnitMessage).CreatUnit) {
-			this.notifyHandlers('CreateUnit', msg)
+		console.log('onMessageRecived', e)
+		if ((msg as CreateUnitResponse).CreatUnit) {
+			this.notifyHandlers('CreatUnit', msg)
 		}
 		if ((msg as SetUnitMessage).SetUnit) {
 			this.notifyHandlers('SetUnit', msg)
