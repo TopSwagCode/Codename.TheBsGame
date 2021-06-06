@@ -31,7 +31,7 @@ class Game {
 		this.gameWorld = new GameWorld(this.scene)
 		this.gameRenderer = new GameRenderer(container, this.scene, this.camera)
 		this.gameControls = new GameControls(container, this.camera, this.gameWorld)
-		this.modelLoader = new ModelLoader()
+		this.modelLoader = new ModelLoader('assets/models/')
 		this.gameStateDataService = new GameStateDataService()
 	}
 
@@ -51,7 +51,7 @@ class Game {
 	private connectToServer = (connectionAtempt = 0): void => {
 		this.gameStateDataService
 			.connectToWebsocket(1)
-			.then((connected) => this.handleConnectedToServer(connected, connectionAtempt + 1))
+			.then(() => this.handleConnectedToServer(true, connectionAtempt + 1))
 			.catch(() => this.handleConnectedToServer(false, connectionAtempt + 1))
 	}
 
@@ -69,11 +69,15 @@ class Game {
 	}
 
 	private handleServerCreateUnit = (message: CreateUnitMessage): void => {
+		this.gameWorld.addGameObject(this.createMoveableTower(`tower_${uuid()}`, message.CreatUnit.position[0], message.CreatUnit.position[1]))
 		// eslint-disable-next-line no-console
 		console.log('handleServerCreateUnit', message)
 	}
 
 	private handleServerSetUnit = (message: SetUnitMessage): void => {
+		const { position: pos, id } = message.SetUnit
+		this.gameWorld.setGameObject(id, 'position', { x: pos[0], z: pos[1] })
+		this.gameWorld.setGameObject(id, 'position', { x: pos[0], z: pos[1] })
 		// eslint-disable-next-line no-console
 		console.log('handleServerSetUnit', message)
 	}
@@ -93,8 +97,6 @@ class Game {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	public handleActionbarButtonClicked = (button: string): void => {
 		this.gameStateDataService.createUnit(10, 10)
-
-		this.gameWorld.addGameObject(this.createMoveableTower(`tower_${uuid()}`, 10, 10))
 	}
 
 	private loadModels = (): void => {
@@ -102,11 +104,11 @@ class Game {
 			[
 				{
 					name: 'tower',
-					path: '/assets/models/tower/scene.gltf'
+					path: '/tower/scene.gltf'
 				},
 				{
 					name: 'well',
-					path: '/assets/models/well/scene.gltf'
+					path: '/well/scene.gltf'
 				}
 			],
 			() => {

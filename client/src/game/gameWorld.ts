@@ -1,6 +1,6 @@
 import { Intersection, Object3D, Raycaster, Scene } from 'three'
 import { IGameObject } from './gameObjects/gameObject'
-import { ICordinates } from './gameObjects/gameObjectWorldData'
+import { ICordinates, IGameObjectWorldData } from './gameObjects/gameObjectWorldData'
 import MoveableGameObject from './gameObjects/moveableGameObject'
 import { IUpdate } from './gameRenderer'
 import WorldEnviroment, { WorldEnviromentDebugEnum } from './worldEnviroment'
@@ -30,6 +30,29 @@ class GameWorld implements IUpdate {
 	public addGameObject = (gameObject: IGameObject): void => {
 		this.scene.add(gameObject.model)
 		this.gameObjects = [...this.gameObjects, gameObject]
+	}
+
+	public setGameObject = (id: string, prop: keyof IGameObjectWorldData, value: IGameObjectWorldData[typeof prop] | Partial<IGameObjectWorldData[typeof prop]>): void => {
+		this.gameObjects
+			.filter((x) => x.key === id)
+			.forEach((g) => {
+				const gameObject = g
+				const worldDataValue = g.worldData[prop]
+				if (typeof worldDataValue === 'object' && typeof value === 'object') {
+					gameObject.worldData = {
+						...g.worldData,
+						[prop]: {
+							...worldDataValue,
+							...value
+						}
+					}
+				} else {
+					gameObject.worldData = {
+						...g.worldData,
+						[prop]: value
+					}
+				}
+			})
 	}
 
 	public getSceneIntersection = (raycaster: Raycaster): Intersection[] => {

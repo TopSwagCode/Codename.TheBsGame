@@ -29,7 +29,7 @@ pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result
 
     register_client(uuid.clone(), user_id, clients).await;
     Ok(json(&RegisterResponse {
-        url: format!("ws://127.0.0.1:8000/ws/{}", uuid),
+        url: format!("ws/{}", uuid),
     }))
 }
 

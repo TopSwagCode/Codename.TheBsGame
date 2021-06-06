@@ -20,12 +20,16 @@ interface MessageHandler {
 class GameStateDataService {
 	private apiUri: string
 
+	private wsUri: string
+
 	private socket: WebSocket | undefined
 
 	private messageHandlers: MessageHandler[]
 
 	constructor() {
 		this.apiUri = process.env.REACT_APP_SERVER_API
+		this.wsUri = process.env.REACT_APP_SERVER_WS
+
 		this.messageHandlers = []
 	}
 
@@ -40,15 +44,19 @@ class GameStateDataService {
 				},
 				body: JSON.stringify({ user_id: userId })
 			})
-				.then((r) => r.json())
-				.then((r: ConnectResponse) => r.url)
+				.then((r) => {
+					return r.json()
+				})
+				.then((r: ConnectResponse): string => {
+					return r.url
+				})
 				.then((url) => {
-					const socket = new WebSocket(url)
+					const socket = new WebSocket(`${this.wsUri}/${url}`)
 					socket.onopen = () => {
+						socket.onmessage = this.onMessageRecived
 						this.socket = socket
 						resolve(true)
 					}
-					socket.onmessage = this.onMessageRecived
 				})
 				.catch(() => reject())
 		})
@@ -81,6 +89,9 @@ class GameStateDataService {
 		const msg: WebsocketMessage = JSON.parse(e.data)
 		if ((msg as CreateUnitMessage).CreatUnit) {
 			this.notifyHandlers('CreateUnit', msg)
+		}
+		if ((msg as SetUnitMessage).SetUnit) {
+			this.notifyHandlers('SetUnit', msg)
 		}
 	}
 }
