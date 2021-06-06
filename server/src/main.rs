@@ -55,7 +55,12 @@ async fn main() {
         .and_then(handler::ws_handler);
     let cors = warp::cors()
         .allow_any_origin()
-        .allow_headers(vec!["Access-Control-Request-Headers","Content-Type","Accept","*"])
+        .allow_headers(vec![
+            "Access-Control-Request-Headers",
+            "Content-Type",
+            "Accept",
+            "*",
+        ])
         .allow_methods(vec!["POST", "GET", "DELETE"]);
 
     let routes = health_route
@@ -63,7 +68,7 @@ async fn main() {
         .or(register_routes)
         .or(ws_route)
         .with(cors);
-    let address = ([127, 0, 0, 1], 8000);
+    let address = ([0, 0, 0, 0], 8000);
     println!("Listening on {:?}", address);
     warp::serve(routes).run(address).await;
 }
