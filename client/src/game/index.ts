@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Scene } from 'three'
 import { v4 as uuid } from 'uuid'
-import ModelLoader, { LoadedGameModel, LoadedModels } from './loaders/modelLoader'
-import GameObject, { IGameObject } from './gameObjects/gameObject'
+import ModelLoader, { LoadedModels } from './loaders/modelLoader'
+import { IGameObject } from './gameObjects/gameObject'
 import MoveableGameObject from './gameObjects/moveableGameObject'
 import GameStateDataService from './services/gameStateDataService'
 import { CreateUnitMessage, SetUnitMessage } from './services/models'
@@ -78,7 +78,7 @@ class Game {
 	private handleServerSetUnit = (message: SetUnitMessage): void => {
 		const { position: pos, id } = message.SetUnit
 		this.gameWorld.setGameObject(id, 'position', { x: pos[0], z: pos[1] })
-		this.gameWorld.setGameObject(id, 'position', { x: pos[0], z: pos[1] })
+		this.gameWorld.setGameObject(id, 'destination', { x: pos[0], z: pos[1] })
 		// eslint-disable-next-line no-console
 		console.log('handleServerSetUnit', message)
 	}
@@ -118,18 +118,6 @@ class Game {
 				this.handleLoadModelsCompleted()
 			}
 		)
-	}
-
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	private createGameObject = (model: LoadedGameModel, posX: number, posZ: number, scale: number): IGameObject => {
-		const gameObj = new GameObject(`${model.name}_${uuid()}`, model.object)
-		// gameObj.worldData.scale = scale
-		gameObj.worldData.receiveShadow = true
-		gameObj.worldData.castShadow = true
-		gameObj.worldData.position.y = 0.1
-		gameObj.worldData.position.x = posX
-		gameObj.worldData.position.z = posZ
-		return gameObj
 	}
 
 	private handleGameObjectReachedDestination = (obj: MoveableGameObject): void => {

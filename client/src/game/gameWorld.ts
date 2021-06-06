@@ -65,8 +65,8 @@ class GameWorld implements IUpdate {
 			.forEach((go) => {
 				if (go instanceof MoveableGameObject) {
 					const { worldData } = go
-					worldData.destinationPosition = {
-						...worldData.destinationPosition,
+					worldData.destination = {
+						...worldData.destination,
 						x: destination.x,
 						z: destination.z
 					}

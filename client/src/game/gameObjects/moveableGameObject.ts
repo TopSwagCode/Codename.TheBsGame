@@ -1,35 +1,28 @@
 import { Object3D } from 'three'
 import GameObject, { IGameObject } from './gameObject'
-import { ICordinates } from './gameObjectWorldData'
-import MoveableGameObjectWorldData, { IMoveableGameObjectWorldData } from './moveableGameObjectWorldData'
+import GameObjectWorldData, { ICordinates, IGameObjectWorldData } from './gameObjectWorldData'
 
-export interface IMoveableGameObject extends IGameObject {
-	worldData: IMoveableGameObjectWorldData
-}
+export type IMoveableGameObject = IGameObject
 
 class MoveableGameObject extends GameObject implements IMoveableGameObject {
 	public movementSpeed = 5
 
-	public worldData: IMoveableGameObjectWorldData
-
 	public destinationReached?: (obj: this) => void
 
-	protected renderedWorldData: IMoveableGameObjectWorldData
-
-	constructor(key: string, model: Object3D, worldData: IMoveableGameObjectWorldData = new MoveableGameObjectWorldData()) {
+	constructor(key: string, model: Object3D, worldData: IGameObjectWorldData = new GameObjectWorldData()) {
 		super(key, model, worldData)
 		this.worldData = worldData
-		this.renderedWorldData = new MoveableGameObjectWorldData()
+		this.renderedWorldData = new GameObjectWorldData()
 	}
 
 	public update(time: number, delta: number): void {
-		const updateData = this.updateData<IMoveableGameObjectWorldData>()
-		updateData('destinationPosition')
+		const updateData = this.updateData<IGameObjectWorldData>()
+		updateData('destination')
 
 		const { worldData } = this
-		if (worldData.position.x !== worldData.destinationPosition.x || worldData.position.z !== worldData.destinationPosition.z) {
-			worldData.position = this.move(worldData.position, worldData.destinationPosition, delta)
-			if (worldData.position.x === worldData.destinationPosition.x && worldData.position.z === worldData.destinationPosition.z) {
+		if (worldData.position.x !== worldData.destination.x || worldData.position.z !== worldData.destination.z) {
+			worldData.position = this.move(worldData.position, worldData.destination, delta)
+			if (worldData.position.x === worldData.destination.x && worldData.position.z === worldData.destination.z) {
 				if (this.destinationReached) {
 					this.destinationReached(this)
 				}

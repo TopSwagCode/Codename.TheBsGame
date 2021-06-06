@@ -8,6 +8,7 @@ export interface ICordinates {
 export interface IGameObjectWorldData {
 	position: ICordinates
 	rotation: ICordinates
+	destination: ICordinates
 	scale: number
 	castShadow: boolean
 	receiveShadow: boolean
@@ -20,6 +21,8 @@ class GameObjectWorldData implements IGameObjectWorldData {
 	public position: ICordinates = { x: 0, y: 0, z: 0 }
 
 	public rotation: ICordinates = { x: 0, y: 0, z: 0 }
+
+	public destination: ICordinates = this.position
 
 	public isDirty = false
 
