@@ -1,5 +1,4 @@
-import { Camera, Material, Mesh, Object3D, Vector3 } from 'three'
-import { ICordinates } from '../gameObjects/gameObjectWorldData'
+import { Material, Mesh, Object3D } from 'three'
 
 class Object3DHelper {
 	public static cloneObject3D = (object: Object3D, recursive = true, cloneMaterials = false): Object3D => {

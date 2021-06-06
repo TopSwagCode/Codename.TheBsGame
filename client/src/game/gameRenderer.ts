@@ -1,7 +1,7 @@
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { Clock, PerspectiveCamera, Scene, sRGBEncoding, WebGLRenderer } from 'three'
 
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 export interface IUpdate {
 	update: (timer: number, delta: number) => void
