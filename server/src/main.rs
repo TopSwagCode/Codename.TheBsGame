@@ -63,7 +63,7 @@ async fn main() {
         .or(register_routes)
         .or(ws_route)
         .with(cors);
-    let address = ([127, 0, 0, 1], 8000);
+    let address = ([0, 0, 0, 0], 80);
     println!("Listening on {:?}", address);
     warp::serve(routes).run(address).await;
 }

@@ -15,21 +15,24 @@ export interface LoadedModels {
 	[property: string]: LoadedGameModel
 }
 class ModelLoader {
+	private baseUrl: string
+
 	private gltfLoader: GLTFLoader
 
 	private dracoLoader: DRACOLoader
 
 	public loadedModels: LoadedModels
 
-	constructor() {
+	constructor(baseUrl = '') {
+		this.baseUrl = baseUrl
 		this.gltfLoader = new GLTFLoader()
 		this.dracoLoader = new DRACOLoader()
 		this.loadedModels = {}
 	}
 
 	public initialize = (): void => {
-		this.dracoLoader.setDecoderPath('/assets/draco/')
-		this.gltfLoader.setDRACOLoader(this.dracoLoader)
+		// this.dracoLoader.setDecoderPath('/assets/draco/')
+		// this.gltfLoader.setDRACOLoader(this.dracoLoader)
 	}
 
 	public loadModels = (models: GameModel[], completeCallback: (loadedModels: LoadedModels) => void): void => {
@@ -52,7 +55,7 @@ class ModelLoader {
 	}
 
 	private loadModel = (gameModel: GameModel, callback: (model: LoadedGameModel) => void): void => {
-		this.gltfLoader.load(gameModel.path, (gltf) => {
+		this.gltfLoader.load(`${this.baseUrl}${gameModel.path}`, (gltf) => {
 			callback({
 				...gameModel,
 				object: gltf.scene

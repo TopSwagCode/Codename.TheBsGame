@@ -402,18 +402,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
-name = "learnwebsocket"
-version = "0.1.0"
-dependencies = [
- "futures",
- "serde 1.0.126",
- "serde_json",
- "tokio",
- "uuid",
- "warp",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -882,6 +870,18 @@ dependencies = [
  "redox_syscall",
  "remove_dir_all",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "thebsgame-server"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "serde 1.0.126",
+ "serde_json",
+ "tokio",
+ "uuid",
+ "warp",
 ]
 
 [[package]]
