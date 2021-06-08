@@ -55,7 +55,12 @@ async fn main() {
         .and_then(handler::ws_handler);
     let cors = warp::cors()
         .allow_any_origin()
-        .allow_headers(vec!["Access-Control-Request-Headers","Content-Type","Accept","*"])
+        .allow_headers(vec![
+            "Access-Control-Request-Headers",
+            "Content-Type",
+            "Accept",
+            "*",
+        ])
         .allow_methods(vec!["POST", "GET", "DELETE"]);
 
     let routes = health_route
