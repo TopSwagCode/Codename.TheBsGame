@@ -1,11 +1,15 @@
 import { Intersection, Object3D, Raycaster, Scene } from 'three'
 import { IGameObject } from './gameObjects/gameObject'
 import { ICordinates, IGameObjectWorldData } from './gameObjects/gameObjectWorldData'
-import MoveableGameObject from './gameObjects/moveableGameObject'
 import { IUpdate } from './gameRenderer'
 import WorldEnviroment, { WorldEnviromentDebugEnum } from './worldEnviroment'
 
 class GameWorld implements IUpdate {
+	private setGameObjectWorldDataListeners: {
+		type: keyof IGameObjectWorldData
+		handler: (id: string, data: IGameObjectWorldData) => void
+	}[]
+
 	private scene: Scene
 
 	public gameObjects: IGameObject[]
@@ -13,6 +17,7 @@ class GameWorld implements IUpdate {
 	private worldEnviroment: WorldEnviroment
 
 	constructor(scene: Scene) {
+		this.setGameObjectWorldDataListeners = []
 		this.scene = scene
 		this.worldEnviroment = new WorldEnviroment(scene)
 		this.gameObjects = []
@@ -32,32 +37,67 @@ class GameWorld implements IUpdate {
 		this.gameObjects = [...this.gameObjects, gameObject]
 	}
 
-	public setGameObject = <K extends keyof IGameObjectWorldData>(id: string, prop: K, value: IGameObjectWorldData[K]): void => {
+	public addSetGameObjectWorldDataListener = (prop: keyof IGameObjectWorldData, handler: (id: string, data: IGameObjectWorldData) => void): void => {
+		this.setGameObjectWorldDataListeners = [...this.setGameObjectWorldDataListeners, { type: prop, handler }]
+	}
+
+	private notifySetGameObjectWorldDataListener = <K extends keyof IGameObjectWorldData>(id: string, prop: K, data: IGameObjectWorldData): void => {
+		this.setGameObjectWorldDataListeners
+			.filter((li) => li.type === prop)
+			.forEach((li) => {
+				li.handler(id, data)
+			})
+	}
+
+	public setGameObjectWorldData = <K extends keyof IGameObjectWorldData>(id: string, prop: K, value: IGameObjectWorldData[K]): void => {
 		this.gameObjects
 			.filter((x) => x.key === id)
 			.forEach((g) => {
 				const gameObject = g
-				gameObject.worldData[prop] = value
+				const changed = !this.shallowEqual(gameObject.worldData[prop], value)
+				if (changed) {
+					gameObject.worldData[prop] = value
+					this.notifySetGameObjectWorldDataListener(id, prop, gameObject.worldData)
+				}
 			})
+	}
+
+	private shallowEqual = <T>(object1: T, object2: T): boolean => {
+		const keys1 = Object.keys(object1)
+		const keys2 = Object.keys(object2)
+
+		if (keys1.length !== keys2.length) {
+			return false
+		}
+		if (keys1.filter((k) => object1[k as keyof T] !== object2[k as keyof T]).length > 0) {
+			return false
+		}
+
+		return true
+	}
+
+	public setSelectedGameObjectsWorldData = <K extends keyof IGameObjectWorldData>(prop: K, value: IGameObjectWorldData[K]): void => {
+		this.forEachSelectedGameObject((go) => {
+			this.setGameObjectWorldData(go.key, prop, value)
+		})
+	}
+
+	private forEachSelectedGameObject = (callback: (gameObject: IGameObject, index: number, all: IGameObject[]) => void): void => {
+		this.gameObjects.filter((x) => x.worldData.selected).forEach(callback)
+	}
+
+	public setSelectedGameObjectsDestination = (destination: ICordinates): void => {
+		this.forEachSelectedGameObject((go) => {
+			this.setGameObjectWorldData(go.key, 'destination', {
+				...go.worldData.destination,
+				x: destination.x,
+				z: destination.z
+			})
+		})
 	}
 
 	public getSceneIntersection = (raycaster: Raycaster): Intersection[] => {
 		return raycaster.intersectObject(this.scene, true)
-	}
-
-	public moveSelectedGameObjects = (destination: ICordinates): void => {
-		this.gameObjects
-			.filter((x) => x.worldData.selected)
-			.forEach((go) => {
-				if (go instanceof MoveableGameObject) {
-					const { worldData } = go
-					worldData.destination = {
-						...worldData.destination,
-						x: destination.x,
-						z: destination.z
-					}
-				}
-			})
 	}
 
 	public getGameObjectIntersection = (raycaster: Raycaster): IGameObject | null => {

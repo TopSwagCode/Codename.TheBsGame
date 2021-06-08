@@ -63,7 +63,7 @@ class WorldInteractionControls {
 				y: intersecs[0].point.y,
 				z: intersecs[0].point.z
 			}
-			this.gameWorld.moveSelectedGameObjects(destination)
+			this.gameWorld.setSelectedGameObjectsDestination(destination)
 		}
 	}
 }

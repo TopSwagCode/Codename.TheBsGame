@@ -1,7 +1,10 @@
 import Unit from './unit'
 
-type SetUnitMessage = {
-	SetUnit: Unit
+type SetUnitPosition = {
+	SetUnitPosition: Pick<Unit, 'id' | 'position'>
+}
+type SetUnitDestination = {
+	SetUnitDestination: Pick<Unit, 'id' | 'destination'>
 }
 
-export default SetUnitMessage
+export type { SetUnitPosition, SetUnitDestination }

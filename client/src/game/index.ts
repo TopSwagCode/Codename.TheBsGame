@@ -3,7 +3,7 @@ import ModelLoader, { LoadedModels } from './loaders/modelLoader'
 import { IGameObject } from './gameObjects/gameObject'
 import MoveableGameObject from './gameObjects/moveableGameObject'
 import GameStateDataService from './services/gameStateDataService'
-import { CreateUnitResponse, SetUnitMessage } from './services/models'
+import { CreateUnitResponse, SetUnitDestination, SetUnitPosition } from './services/models'
 import GameWorld from './gameWorld'
 import GameRenderer from './gameRenderer'
 import GameControls from './controls/gameControls'
@@ -43,7 +43,10 @@ class Game {
 
 		this.gameRenderer.addUpdateTarget(this.gameWorld)
 		this.gameRenderer.addUpdateTarget(this.gameControls)
-
+		this.gameWorld.addSetGameObjectWorldDataListener('destination', (id, worldData) => {
+			const { destination } = worldData
+			this.gameStateDataService.setUnitDestination(id, destination.x, destination.z)
+		})
 		this.camera.position.set(30, 30, -20)
 		this.loadModels()
 	}
@@ -57,8 +60,9 @@ class Game {
 
 	private handleConnectedToServer = (connected: boolean, connectionAtempt = 0): void => {
 		if (connected) {
-			this.gameStateDataService.addMessageHandler('CreatUnit', this.handleServerCreateUnit)
-			this.gameStateDataService.addMessageHandler('SetUnit', this.handleServerSetUnit)
+			this.gameStateDataService.addMessageHandler('CreateUnit', this.handleServerCreateUnit)
+			this.gameStateDataService.addMessageHandler('SetUnitDestination', this.handleServerSetUnitDestination)
+			this.gameStateDataService.addMessageHandler('SetUnitPosition', this.handleServerSetUnitPosition)
 
 			this.gameRenderer.start()
 		} else {
@@ -69,18 +73,24 @@ class Game {
 	}
 
 	private handleServerCreateUnit = (message: CreateUnitResponse): void => {
-		// eslint-disable-next-line no-console
-		console.log('handleServerCreateUnit', message)
-		const { position: pos, id } = message.CreatUnit
-		this.gameWorld.addGameObject(this.createMoveableTower(id, pos[0], pos[1]))
+		const { position: pos, id } = message.CreateUnit
+		if (pos.length >= 2) {
+			this.gameWorld.addGameObject(this.createMoveableTower(id, pos[0], pos[1]))
+		}
 	}
 
-	private handleServerSetUnit = (message: SetUnitMessage): void => {
-		// eslint-disable-next-line no-console
-		console.log('handleServerSetUnit', message)
-		const { position: pos, id } = message.SetUnit
-		this.gameWorld.setGameObject(id, 'destination', { x: pos[0], z: pos[1], y: 0.1 })
-		this.gameWorld.setGameObject(id, 'position', { x: pos[0], z: pos[1], y: 0.1 })
+	private handleServerSetUnitPosition = (message: SetUnitPosition): void => {
+		const { position: pos, id } = message.SetUnitPosition
+		if (pos.length >= 2) {
+			this.gameWorld.setGameObjectWorldData(id, 'position', { x: pos[0], z: pos[1], y: 0.1 })
+		}
+	}
+
+	private handleServerSetUnitDestination = (message: SetUnitDestination): void => {
+		const { destination: pos, id } = message.SetUnitDestination
+		if (pos.length >= 2) {
+			this.gameWorld.setGameObjectWorldData(id, 'destination', { x: pos[0], z: pos[1], y: 0.1 })
+		}
 	}
 
 	private handleLoadModelsCompleted = (): void => {
@@ -121,7 +131,7 @@ class Game {
 	}
 
 	private handleGameObjectReachedDestination = (obj: MoveableGameObject): void => {
-		this.gameStateDataService.setUnit(obj.key, obj.worldData.position.x, obj.worldData.position.z)
+		this.gameStateDataService.setUnitPosition(obj.key, obj.worldData.position.x, obj.worldData.position.z)
 	}
 
 	private createMoveableTower = (id: string, posX: number, posZ: number): IGameObject => this.createMoveableGameObject('tower', id, posX, posZ)

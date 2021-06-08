@@ -1,9 +1,9 @@
-import { ConnectResponse, CreateUnitRequest, CreateUnitResponse, GameState } from './models'
-import SetUnitMessage from './models/setUnitMessage'
+import { ConnectResponse, CreateUnitRequest, CreateUnitResponse, GameState, SetUnitPosition, SetUnitDestination } from './models'
 
 interface WebsocketMessages {
-	CreatUnit: CreateUnitResponse
-	SetUnit: SetUnitMessage
+	CreateUnit: CreateUnitResponse
+	SetUnitPosition: SetUnitPosition
+	SetUnitDestination: SetUnitDestination
 }
 
 type WebsocketMessageType = keyof WebsocketMessages
@@ -62,11 +62,15 @@ class GameStateDataService {
 		})
 
 	public createUnit = (x: number, z: number): void => {
-		this.socket?.send(JSON.stringify({ CreatUnit: { position: [x, z] } } as CreateUnitRequest))
+		this.socket?.send(JSON.stringify({ CreateUnit: { position: [x, z] } } as CreateUnitRequest))
 	}
 
-	public setUnit = (id: string, x: number, z: number): void => {
-		this.socket?.send(JSON.stringify({ SetUnit: { position: [x, z], id } }))
+	public setUnitPosition = (id: string, x: number, z: number): void => {
+		this.socket?.send(JSON.stringify({ SetUnitPosition: { position: [x, z], id } } as SetUnitPosition))
+	}
+
+	public setUnitDestination = (id: string, x: number, z: number): void => {
+		this.socket?.send(JSON.stringify({ SetUnitDestination: { destination: [x, z], id } } as SetUnitDestination))
 	}
 
 	public fetchInitialGameState = (): Promise<GameState> =>
@@ -87,11 +91,16 @@ class GameStateDataService {
 
 	private onMessageRecived = (e: MessageEvent): void => {
 		const msg: WebsocketMessage = JSON.parse(e.data)
-		if ((msg as CreateUnitResponse).CreatUnit) {
-			this.notifyHandlers('CreatUnit', msg)
+		// eslint-disable-next-line no-console
+		console.log('onMessageRecived', msg)
+		if ((msg as CreateUnitResponse).CreateUnit) {
+			this.notifyHandlers('CreateUnit', msg)
 		}
-		if ((msg as SetUnitMessage).SetUnit) {
-			this.notifyHandlers('SetUnit', msg)
+		if ((msg as SetUnitDestination).SetUnitDestination) {
+			this.notifyHandlers('SetUnitDestination', msg)
+		}
+		if ((msg as SetUnitPosition).SetUnitPosition) {
+			this.notifyHandlers('SetUnitPosition', msg)
 		}
 	}
 }

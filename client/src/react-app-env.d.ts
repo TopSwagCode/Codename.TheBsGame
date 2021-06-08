@@ -8,8 +8,3 @@ declare namespace NodeJS {
 		REACT_APP_SERVER_WS: string
 	}
 }
-interface Window {
-	logCount: number
-	log: (message?: unknown, ...optionalParams: unknown[]) => void
-	logC: (message?: unknown, mod: number = 100, ...optionalParams: unknown[]) => void
-}

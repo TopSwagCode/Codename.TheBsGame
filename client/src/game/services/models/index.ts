@@ -1,7 +1,7 @@
 import GameState from './gameState'
 import ConnectResponse from './connectResponse'
 import { CreateUnitRequest, CreateUnitResponse } from './createUnitMessage'
-import SetUnitMessage from './setUnitMessage'
+import { SetUnitPosition, SetUnitDestination } from './setUnitMessage'
 import Unit from './unit'
 
-export type { GameState, ConnectResponse, CreateUnitRequest, CreateUnitResponse, SetUnitMessage, Unit }
+export type { GameState, ConnectResponse, CreateUnitRequest, CreateUnitResponse, SetUnitPosition, SetUnitDestination, Unit }

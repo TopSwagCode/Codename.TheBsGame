@@ -1,9 +1,9 @@
 import Unit from './unit'
 
 type CreateUnitRequest = {
-	CreatUnit: { position: number[] }
+	CreateUnit: Pick<Unit, 'position'>
 }
 type CreateUnitResponse = {
-	CreatUnit: Unit
+	CreateUnit: Unit
 }
 export type { CreateUnitRequest, CreateUnitResponse }
