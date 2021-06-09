@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy client
     needs: [build-client]
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Download client build artifact
         uses: actions/download-artifact@v2
