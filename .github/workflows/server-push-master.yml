@@ -71,7 +71,7 @@ jobs:
           
 
       - name: Beanstalk Deploy my app
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: einaregilsson/beanstalk-deploy@v14
         with:
           aws_access_key: ${{secrets.AWS_ACCESS_KEY}}
