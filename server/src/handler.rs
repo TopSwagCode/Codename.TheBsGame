@@ -22,6 +22,15 @@ pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Repl
 }
 
 
+
+pub async fn reset_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
+    let game_state = &mut game_state.write().await.units;    
+    game_state.clear();
+    let json = json(&game_state);
+    Ok(json)
+}
+
+
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
     let user_id = body.user_id;
     println!("Register Handler, user_id {}", user_id);
