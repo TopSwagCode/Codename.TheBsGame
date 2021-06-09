@@ -35,6 +35,16 @@ async fn main() {
         .and(with_game_state(game_state.clone()))
         .and_then(handler::get_game_state_handler);
 
+    let reset_path = warp::path("reset");
+    let reset_route_get = reset_path
+        .and(warp::get())
+        .and(with_game_state(game_state.clone()))
+        .and_then(handler::reset_game_state_handler);
+    let reset_route_post = reset_path
+        .and(warp::post())
+        .and(with_game_state(game_state.clone()))
+        .and_then(handler::reset_game_state_handler);
+
     let register = warp::path("register");
     let register_routes = register
         .and(warp::post())
@@ -66,6 +76,8 @@ async fn main() {
     let routes = health_route
         .or(game_route)
         .or(register_routes)
+        .or(reset_route_get)
+        .or(reset_route_post)
         .or(ws_route)
         .with(cors);
     let address = ([0, 0, 0, 0], 80);
