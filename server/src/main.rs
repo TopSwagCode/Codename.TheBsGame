@@ -2,6 +2,8 @@ use crate::game::components::Position;
 use crate::game::components::Velocity;
 // #![windows_subsystem = "windows"]
 use crate::game::game_state::GameState;
+use crate::game::game_state::Unit;
+use crate::game::game_state::UnitType;
 use crate::game::resources::TimeResource;
 use crate::game::schedule::create_schedule;
 use legion::*;
@@ -29,7 +31,10 @@ pub struct Client {
 
 #[tokio::main]
 async fn main() {
-    let _handler = thread::spawn(|| {
+    let game_state = Arc::new(RwLock::new(GameState::default()));
+
+    let game_state_ref = game_state.clone();
+    thread::spawn(move || {
         let mut world = World::default();
 
         world.push((Position { x: 1., y: 1. }, Velocity { dx: 0.5, dy: 1.0 }));
@@ -46,6 +51,25 @@ async fn main() {
                 .get_mut::<TimeResource>()
                 .expect("Must have a time resource");
             time.ticks += 1;
+
+            let mut new_game_state = GameState::default();
+            <(&Position, Entity)>::query().for_each(&world, |(pos, entity)| {
+                let id = format!("{:?}", entity);
+                new_game_state.units.insert(
+                    id.clone(),
+                    Unit {
+                        position: (pos.x, pos.y),
+                        unit_type: UnitType::Normal,
+                        id,
+                    },
+                );
+            });
+            {
+                // This block_on is used to make the game thread block on an async. 
+                // We don't want the game thread to use async, since it will require it to 
+                let mut lock = futures::executor::block_on(game_state_ref.write());
+                lock.units = new_game_state.units;
+            }
             thread::sleep(Duration::from_secs(1) - elapsed_duration);
             time.elapsed_seconds = before.elapsed().unwrap().as_secs_f64();
         }
@@ -54,8 +78,6 @@ async fn main() {
     let clients: Clients = Arc::new(RwLock::new(HashMap::new()));
 
     let health_route = warp::path!("health").and_then(handler::health_handler);
-
-    let game_state = Arc::new(RwLock::new(GameState::default()));
 
     let game = warp::path("game");
     let game_route = game
@@ -110,7 +132,7 @@ async fn main() {
         .with(cors);
     let address = ([0, 0, 0, 0], 8000);
     println!("Listening on {:?}", address);
-    warp::serve(routes).run(address).await;    
+    warp::serve(routes).run(address).await;
 }
 
 fn with_clients(clients: Clients) -> impl Filter<Extract = (Clients,), Error = Infallible> + Clone {
