@@ -1,8 +1,12 @@
-use crate::{ws, Client, Clients, GameStateRef, Result};
+use tokio::sync::mpsc::Sender;
+
+use crate::{
+    ws::{self, RequestType},
+    Client, Clients, GameStateRef, Result,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use warp::{http::StatusCode, reply::json, Reply};
-
 
 #[derive(Serialize, Debug)]
 pub struct RegisterResponse {
@@ -14,22 +18,16 @@ pub struct RegisterRequest {
     user_id: usize,
 }
 
-
-pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
-    let game_state = &game_state.read().await.units;    
+pub async fn get_game_state_handler(game_state: GameStateRef) -> Result<impl Reply> {
+    let game_state = &game_state.read().await.units;
     let json = json(&game_state);
     Ok(json)
 }
 
-
-
-pub async fn reset_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
-    let game_state = &mut game_state.write().await.units;    
-    game_state.clear();
-    let json = json(&game_state);
-    Ok(json)
+pub async fn reset_game_state_handler(mut sender: Sender<RequestType>) -> impl Reply {
+    sender.send(RequestType::ResetGame);    
+    ""
 }
-
 
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
     let user_id = body.user_id;
@@ -60,7 +58,6 @@ pub async fn unregister_handler(id: String, clients: Clients) -> Result<impl Rep
     clients.write().await.remove(&id);
     Ok(StatusCode::OK)
 }
-
 
 pub async fn ws_handler(
     ws: warp::ws::Ws,

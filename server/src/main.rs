@@ -7,6 +7,7 @@ use crate::game::game_state::Unit;
 use crate::game::game_state::UnitType;
 use crate::game::resources::TimeResource;
 use crate::game::schedule::create_schedule;
+use crate::ws::RequestType;
 use legion::*;
 use std::collections::HashMap;
 use std::convert::Infallible;
@@ -34,6 +35,7 @@ pub struct Client {
 #[tokio::main]
 async fn main() {
     let game_state = Arc::new(RwLock::new(GameState::default()));
+    let (sender, mut receiver) = mpsc::channel::<RequestType>(1000);
 
     let game_state_ref = game_state.clone();
     thread::spawn(move || {
@@ -51,6 +53,12 @@ async fn main() {
 
         loop {
             let before = SystemTime::now();
+
+            match receiver.try_recv() {
+                Ok(_) => "",
+                Err(_) => "",
+            };
+
             schedule.execute(&mut world, &mut resources);
             let elapsed_duration = before.elapsed().unwrap();
             let mut time = resources
@@ -75,6 +83,7 @@ async fn main() {
                 let mut lock = futures::executor::block_on(game_state_ref.write());
                 lock.units = new_game_state.units;
             }
+
             thread::sleep(Duration::from_secs(1) - elapsed_duration);
             time.elapsed_seconds = before.elapsed().unwrap().as_secs_f64();
         }
@@ -93,12 +102,16 @@ async fn main() {
     let reset_path = warp::path("reset");
     let reset_route_get = reset_path
         .and(warp::get())
-        .and(with_game_state(game_state.clone()))
-        .and_then(handler::reset_game_state_handler);
-    let reset_route_post = reset_path
-        .and(warp::post())
-        .and(with_game_state(game_state.clone()))
-        .and_then(handler::reset_game_state_handler);
+        .and(with_sender(sender.clone()))
+        .and_then(move |my_sender| async move {
+            Ok::<_, Infallible>(handler::reset_game_state_handler(my_sender).await)
+        });
+    // let reset_route_post = reset_path
+    //     .and(warp::post())
+    //     .and(with_sender(sender.clone()))
+    //     .and_then(move |my_sender: Sender<RequestType>| async move {
+    //         Ok(handler::reset_game_state_handler(my_sender.clone()).await)
+    //     });
 
     let register = warp::path("register");
     let register_routes = register
@@ -132,7 +145,7 @@ async fn main() {
         .or(game_route)
         .or(register_routes)
         .or(reset_route_get)
-        .or(reset_route_post)
+        // .or(reset_route_post)
         .or(ws_route)
         .with(cors);
     let address = ([0, 0, 0, 0], 8000);
@@ -142,6 +155,12 @@ async fn main() {
 
 fn with_clients(clients: Clients) -> impl Filter<Extract = (Clients,), Error = Infallible> + Clone {
     warp::any().map(move || clients.clone())
+}
+
+fn with_sender<T: Send + Sync>(
+    sender: mpsc::Sender<T>,
+) -> impl Filter<Extract = (mpsc::Sender<T>,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || sender.clone())
 }
 
 fn with_game_state(

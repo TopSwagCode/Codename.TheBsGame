@@ -1,29 +1,33 @@
 use crate::{
-    game::game_state::{Unit, UnitType},
+    game::{
+        self,
+        game_state::{GameState, Unit, UnitType},
+    },
     Client, Clients, GameStateRef,
 };
 use futures::{FutureExt, StreamExt};
-use serde::{Deserialize};
-use serde_json::{from_str};
+use serde::Deserialize;
+use serde_json::from_str;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct CreateUnitRequest {
     position: (f32, f32),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SetUnitRequest {
     position: (f32, f32),
     id: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub enum RequestType {
     CreatUnit(CreateUnitRequest),
     SetUnit(SetUnitRequest),
+    ResetGame,
 }
 
 pub async fn client_connection(
@@ -95,14 +99,23 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, game_state: &mut 
                     unit.position = position;
                 }
                 None => {
-                    eprintln!("Could not set position for unit, because it was not found: {}", id);
+                    eprintln!(
+                        "Could not set position for unit, because it was not found: {}",
+                        id
+                    );
                 }
             }
         }
-        Err(e) => {            
+        Ok(ResetGame) => {
+            *game_state.write().await = GameState::default()
+        }
+        Err(e) => {
             let example_string = "{\"CreatUnit\":{\"position\":[10.0,15.0]}}";
             //Send something like this {"CreatUnit":{"position":[10.0,15.0]}}
-            eprintln!("error parsing message: {} , try something like this\n {}", e, example_string); 
+            eprintln!(
+                "error parsing message: {} , try something like this\n {}",
+                e, example_string
+            );
             return;
         }
     };
