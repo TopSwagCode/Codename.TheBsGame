@@ -1,4 +1,5 @@
 use crate::game::components::Position;
+use crate::game::components::UnitId;
 use crate::game::components::Velocity;
 // #![windows_subsystem = "windows"]
 use crate::game::game_state::GameState;
@@ -13,6 +14,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{mpsc, RwLock};
+use uuid::Uuid;
 use warp::{ws::Message, Filter, Rejection};
 
 mod game;
@@ -36,8 +38,12 @@ async fn main() {
     let game_state_ref = game_state.clone();
     thread::spawn(move || {
         let mut world = World::default();
-
-        world.push((Position { x: 1., y: 1. }, Velocity { dx: 0.5, dy: 1.0 }));
+        let uuid = Uuid::new_v4().simple().to_string();
+        world.push((
+            Position { x: 1., y: 1. },
+            Velocity { dx: 0.5, dy: 1.0 },
+            UnitId { id: uuid },
+        ));
         let mut schedule = create_schedule();
 
         let mut resources = Resources::default();
@@ -53,20 +59,19 @@ async fn main() {
             time.ticks += 1;
 
             let mut new_game_state = GameState::default();
-            <(&Position, Entity)>::query().for_each(&world, |(pos, entity)| {
-                let id = format!("{:?}", entity);
+            <(&Position, &UnitId)>::query().for_each(&world, |(pos, id)| {
                 new_game_state.units.insert(
-                    id.clone(),
+                    id.id.clone(),
                     Unit {
                         position: (pos.x, pos.y),
                         unit_type: UnitType::Normal,
-                        id,
+                        id: id.id.clone(),
                     },
                 );
             });
             {
-                // This block_on is used to make the game thread block on an async. 
-                // We don't want the game thread to use async, since it will require it to 
+                // This block_on is used to make the game thread block on an async.
+                // We don't want the game thread to use async, since it will require it to
                 let mut lock = futures::executor::block_on(game_state_ref.write());
                 lock.units = new_game_state.units;
             }
