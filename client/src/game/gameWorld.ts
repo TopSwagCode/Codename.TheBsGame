@@ -3,6 +3,7 @@ import { IGameObject } from './gameObjects/gameObject'
 import { ICordinates, IGameObjectWorldData } from './gameObjects/gameObjectWorldData'
 import { IUpdate } from './gameRenderer'
 import WorldEnviroment, { WorldEnviromentDebugEnum } from './worldEnviroment'
+import CompareHelper from '../infrastructure/compareHelper'
 
 class GameWorld implements IUpdate {
 	private setGameObjectWorldDataListeners: {
@@ -54,26 +55,12 @@ class GameWorld implements IUpdate {
 			.filter((x) => x.key === id)
 			.forEach((g) => {
 				const gameObject = g
-				const changed = !this.shallowEqual(gameObject.worldData[prop], value)
+				const changed = !CompareHelper.shallowEqual(gameObject.worldData[prop], value)
 				if (changed) {
 					gameObject.worldData[prop] = value
 					this.notifySetGameObjectWorldDataListener(id, prop, gameObject.worldData)
 				}
 			})
-	}
-
-	private shallowEqual = <T>(object1: T, object2: T): boolean => {
-		const keys1 = Object.keys(object1)
-		const keys2 = Object.keys(object2)
-
-		if (keys1.length !== keys2.length) {
-			return false
-		}
-		if (keys1.filter((k) => object1[k as keyof T] !== object2[k as keyof T]).length > 0) {
-			return false
-		}
-
-		return true
 	}
 
 	public setSelectedGameObjectsWorldData = <K extends keyof IGameObjectWorldData>(prop: K, value: IGameObjectWorldData[K]): void => {
@@ -117,16 +104,15 @@ class GameWorld implements IUpdate {
 	}
 
 	public hoverGameObject = (gameObject: IGameObject | null = null): void => {
-		this.gameObjects
-			.filter((x) => x.worldData.highlighted || (gameObject !== null && x.key === gameObject.key))
-			.forEach((go) => {
-				const { worldData } = go
-				if (gameObject !== null && go.key === gameObject.key) {
-					worldData.highlighted = true
-				} else {
-					worldData.highlighted = false
-				}
-			})
+		const go = this.gameObjects.find((x) => x.worldData.highlighted || (gameObject !== null && x.key === gameObject.key))
+		if (go) {
+			const { worldData } = go
+			if (gameObject !== null && go.key === gameObject.key) {
+				worldData.highlighted = true
+			} else {
+				worldData.highlighted = false
+			}
+		}
 	}
 
 	public selectGameObject = (gameObject: IGameObject | null = null, removeExsistingSelection: boolean): void => {

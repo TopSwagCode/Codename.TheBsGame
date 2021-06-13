@@ -1,6 +1,5 @@
-import { Object3D } from 'three'
 import GameObject, { IGameObject } from './gameObject'
-import GameObjectWorldData, { ICordinates, IGameObjectWorldData } from './gameObjectWorldData'
+import { ICordinates } from './gameObjectWorldData'
 
 export type IMoveableGameObject = IGameObject
 
@@ -9,15 +8,13 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 
 	public destinationReached?: (obj: this) => void
 
-	constructor(key: string, model: Object3D, worldData: IGameObjectWorldData = new GameObjectWorldData()) {
-		super(key, model, worldData)
-		this.worldData = worldData
-		this.renderedWorldData = new GameObjectWorldData()
-	}
+	// constructor(key: string, model: Object3D, worldData: IGameObjectWorldData | undefined) {
+	// 	super(key, model, worldData)
+	// }
 
 	public update(time: number, delta: number): void {
-		const updateData = this.updateData<IGameObjectWorldData>()
-		updateData('destination')
+		// const updateData = this.updateData<IGameObjectWorldData>()
+		// updateData('destination')
 
 		const { worldData } = this
 		if (worldData.position.x !== worldData.destination.x || worldData.position.z !== worldData.destination.z) {

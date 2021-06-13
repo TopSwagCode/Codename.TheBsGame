@@ -1,49 +1,50 @@
-import { OnChange } from '../../infrastructure/decorators/onPropertyChange'
+import { DirtyProps, IDirtyable, PropertyIsDirty } from '../../infrastructure/decorators/propertyIsDirty'
 
 export interface ICordinates {
 	x: number
 	y: number
 	z: number
 }
-export interface IGameObjectWorldData {
+export interface IGameObjectWorldData extends IDirtyable<IGameObjectWorldData> {
 	position: ICordinates
 	rotation: ICordinates
 	destination: ICordinates
-	scale: number
-	castShadow: boolean
-	receiveShadow: boolean
 	selected: boolean
 	highlighted: boolean
-	isDirty: boolean
 }
-
 class GameObjectWorldData implements IGameObjectWorldData {
-	public position: ICordinates = { x: 0, y: 0, z: 0 }
-
-	public rotation: ICordinates = { x: 0, y: 0, z: 0 }
-
-	public destination: ICordinates = this.position
-
-	public isDirty = false
-
-	public scale = 1
-
-	public castShadow = false
-
-	public receiveShadow = false
-
-	public selected = false
-
-	public highlighted = false
-
-	@OnChange(['selected', 'highlighted', 'position', 'scale', 'rotation'])
-	protected setDirty(): void {
-		this.isDirty = true
+	constructor() {
+		this.isDirty = {}
+		this.position = { x: 0, y: 0, z: 0 }
+		this.rotation = { x: 0, y: 0, z: 0 }
+		this.destination = this.position
+		this.selected = false
+		this.highlighted = false
 	}
 
-	protected clearDirty(): void {
-		this.isDirty = false
+	public isAnyDirty = false
+
+	public isDirty: DirtyProps<IGameObjectWorldData>
+
+	public clearDirty = (): void => {
+		this.isDirty = {}
+		this.isAnyDirty = false
 	}
+
+	@PropertyIsDirty('shalowCompare')
+	public position: ICordinates
+
+	@PropertyIsDirty('shalowCompare')
+	public rotation: ICordinates
+
+	@PropertyIsDirty('shalowCompare')
+	public destination: ICordinates
+
+	@PropertyIsDirty()
+	public selected: boolean
+
+	@PropertyIsDirty()
+	public highlighted: boolean
 }
 
 export default GameObjectWorldData

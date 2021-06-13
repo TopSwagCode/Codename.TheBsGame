@@ -21,7 +21,7 @@ class GameRenderer {
 
 	private stats: Stats
 
-	private fps = 60
+	private fps = 200
 
 	private lastRender = Date.now()
 

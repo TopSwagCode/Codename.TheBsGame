@@ -47,7 +47,6 @@ class Game {
 			const { destination } = worldData
 			this.gameStateDataService.setUnitDestination(id, destination.x, destination.z)
 		})
-		this.camera.position.set(30, 30, -20)
 		this.loadModels()
 	}
 
@@ -142,8 +141,6 @@ class Game {
 		const model = this.modelLoader.loadedModels[modelKey]
 		const gameObj = new MoveableGameObject(id, Object3DHelper.setShadows(model.object))
 		gameObj.destinationReached = this.handleGameObjectReachedDestination
-		gameObj.worldData.receiveShadow = true
-		gameObj.worldData.castShadow = true
 		gameObj.worldData.position.y = 0.1
 		gameObj.worldData.position.x = posX
 		gameObj.worldData.position.z = posZ

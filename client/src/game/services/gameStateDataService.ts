@@ -1,4 +1,5 @@
 import { ConnectResponse, CreateUnitRequest, CreateUnitResponse, GameState, SetUnitPosition, SetUnitDestination } from './models'
+import logger from '../../infrastructure/logger'
 
 interface WebsocketMessages {
 	CreateUnit: CreateUnitResponse
@@ -16,7 +17,7 @@ interface MessageHandler {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	handler: MessageHandlerCallback<any & WebsocketMessage>
 }
-
+const log = logger('server_')
 class GameStateDataService {
 	private apiUri: string
 
@@ -92,7 +93,7 @@ class GameStateDataService {
 	private onMessageRecived = (e: MessageEvent): void => {
 		const msg: WebsocketMessage = JSON.parse(e.data)
 		// eslint-disable-next-line no-console
-		console.log('onMessageRecived', msg)
+		log('message', msg)
 		if ((msg as CreateUnitResponse).CreateUnit) {
 			this.notifyHandlers('CreateUnit', msg)
 		}
