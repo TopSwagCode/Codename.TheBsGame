@@ -1,11 +1,17 @@
+use crate::game::components::Position;
+use crate::game::components::Velocity;
 // #![windows_subsystem = "windows"]
+use crate::game::game_state::GameState;
+use crate::game::resources::TimeResource;
+use crate::game::schedule::create_schedule;
+use legion::*;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
+use std::thread;
+use std::time::{Duration, SystemTime};
 use tokio::sync::{mpsc, RwLock};
 use warp::{ws::Message, Filter, Rejection};
-
-use crate::game::game_state::GameState;
 
 mod game;
 mod handler;
@@ -23,6 +29,28 @@ pub struct Client {
 
 #[tokio::main]
 async fn main() {
+    let _handler = thread::spawn(|| {
+        let mut world = World::default();
+
+        world.push((Position { x: 1., y: 1. }, Velocity { dx: 0.5, dy: 1.0 }));
+        let mut schedule = create_schedule();
+
+        let mut resources = Resources::default();
+        resources.insert(TimeResource::default());
+
+        loop {
+            let before = SystemTime::now();
+            schedule.execute(&mut world, &mut resources);
+            let elapsed_duration = before.elapsed().unwrap();
+            let mut time = resources
+                .get_mut::<TimeResource>()
+                .expect("Must have a time resource");
+            time.ticks += 1;
+            thread::sleep(Duration::from_secs(1) - elapsed_duration);
+            time.elapsed_seconds = before.elapsed().unwrap().as_secs_f64();
+        }
+    });
+
     let clients: Clients = Arc::new(RwLock::new(HashMap::new()));
 
     let health_route = warp::path!("health").and_then(handler::health_handler);
@@ -82,7 +110,7 @@ async fn main() {
         .with(cors);
     let address = ([0, 0, 0, 0], 8000);
     println!("Listening on {:?}", address);
-    warp::serve(routes).run(address).await;
+    warp::serve(routes).run(address).await;    
 }
 
 fn with_clients(clients: Clients) -> impl Filter<Extract = (Clients,), Error = Infallible> + Clone {
