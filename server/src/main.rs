@@ -7,7 +7,6 @@ use crate::game::game_state::Unit;
 use crate::game::game_state::UnitType;
 use crate::game::resources::TimeResource;
 use crate::game::schedule::create_schedule;
-use crate::ws::RequestType;
 use game::commands::GameCommand;
 use legion::systems::CommandBuffer;
 use legion::*;
@@ -83,6 +82,7 @@ async fn main() {
                 new_game_state.units.insert(
                     id.id.clone(),
                     Unit {
+                        destination:(pos.x, pos.y),
                         position: (pos.x, pos.y),
                         unit_type: UnitType::Normal,
                         id: id.id.clone(),
@@ -154,7 +154,7 @@ async fn main() {
         // .or(reset_route_post)
         .or(ws_route)
         .with(cors);
-    let address = ([0, 0, 0, 0], 8000);
+    let address = ([0, 0, 0, 0], 80);
     println!("Listening on {:?}", address);
     warp::serve(routes).run(address).await;
 }

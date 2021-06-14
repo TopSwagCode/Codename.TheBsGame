@@ -1,0 +1,16 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Image": {
+        "Name": "rust"
+    },
+    "Ports": [
+        {
+            "ContainerPort": 80,
+            "HostPort": 80
+        },
+        {
+            "ContainerPort": 8000,
+            "HostPort": 8000
+        }
+    ]
+}

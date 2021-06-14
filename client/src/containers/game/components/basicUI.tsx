@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import './basicUI.scss'
+import { TowerIcon, WellIcon } from '../../../components/ui/icons'
 
 interface BasicUIProps {
 	onClickButton: (event: MouseEvent, button: string) => void
@@ -17,10 +18,10 @@ class BasicUI extends PureComponent<BasicUIProps> {
 		return (
 			<div className="ui-actionbar">
 				<button type="button" onClick={this.handleButtonClick('tower')}>
-					Tower
+					<TowerIcon />
 				</button>
 				<button type="button" onClick={this.handleButtonClick('well')}>
-					Well
+					<WellIcon />
 				</button>
 			</div>
 		)

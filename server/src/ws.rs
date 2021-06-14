@@ -1,13 +1,14 @@
 use crate::{
     game::{
         self,
-        game_state::{GameState, Unit, UnitType},
+        game_state::{Unit},
     },
-    Client, Clients, GameCommandSender, GameStateRef,
+    Client, Clients, GameCommandSender,
 };
+
 use futures::{FutureExt, StreamExt};
-use serde::Deserialize;
-use serde_json::from_str;
+use serde::{Deserialize, Serialize};
+use serde_json::{from_str};
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
@@ -18,16 +19,34 @@ pub struct CreateUnitRequest {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct SetUnitRequest {
+pub struct SetUnitRequest {}
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ErrorResponse {
+    message: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SetUnitPositionRequest {
     position: (f32, f32),
+    id: String,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct SetUnitDestinationRequest {
+    destination: (f32, f32),
     id: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub enum RequestType {
     CreatUnit(CreateUnitRequest),
-    SetUnit(SetUnitRequest),
+    SetUnitDestination(SetUnitDestinationRequest),
     ResetGame,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub enum ResponseType {
+    CreateUnit(Unit),
+    ErrorResponse(ErrorResponse),
 }
 
 pub async fn client_connection(
@@ -66,7 +85,7 @@ pub async fn client_connection(
     println!("{} disconnected", id);
 }
 
-async fn client_msg(id: &str, msg: Message, clients: &Clients, mut sender: GameCommandSender) {
+async fn client_msg(id: &str, msg: Message, clients: &Clients, sender: GameCommandSender) {
     println!("received message from {}: {:?}", id, msg);
     let message = match msg.to_str() {
         Ok(v) => v,
@@ -76,10 +95,22 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, mut sender: GameC
     if message == "ping" || message == "ping\n" {
         return;
     }
+    let response = handle_request(message, sender).await;
+    if let Some(response) = response {
+        clients.read().await.iter().for_each(|c| match &c.1.sender {
+            Some(sender) => {
+                let _result = sender.send(Ok(Message::text(response.clone())));
+            }
+            None => {}
+        });
+    }
+}
+
+async fn handle_request(message: &str, mut sender: GameCommandSender) -> Option<String> {
+    let request = from_str(&message);
     use RequestType::*;
 
-    let request = from_str(&message);
-    let response = match request {
+    match request {
         Ok(CreatUnit(CreateUnitRequest { position })) => {
             let uuid = Uuid::new_v4().simple().to_string();
             sender
@@ -91,9 +122,12 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, mut sender: GameC
                 .expect("Should be able to send");
             Some(uuid)
         }
-        Ok(SetUnit(SetUnitRequest { position, id })) => {
+        Ok(SetUnitDestination(SetUnitDestinationRequest { id, destination })) => {
             sender
-                .send(game::commands::GameCommand::SetUnitDestinationCommand { position, uuid: id })
+                .send(game::commands::GameCommand::SetUnitDestinationCommand {
+                    position: destination,
+                    uuid: id,
+                })
                 .await
                 .expect("Should be able to send");
             None
@@ -114,13 +148,5 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, mut sender: GameC
             );
             None
         }
-    };
-    if let Some(response) = response {
-        clients.read().await.iter().for_each(|c| match &c.1.sender {
-            Some(sender) => {
-                let _result = sender.send(Ok(Message::text(response.clone())));
-            }
-            None => {}
-        });
     }
 }

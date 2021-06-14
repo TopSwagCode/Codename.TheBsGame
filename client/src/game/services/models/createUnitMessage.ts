@@ -1,4 +1,9 @@
-type CreateUnitMessage = {
-	CreatUnit: { position: number[] }
+import Unit from './unit'
+
+type CreateUnitRequest = {
+	CreateUnit: Pick<Unit, 'position'>
 }
-export default CreateUnitMessage
+type CreateUnitResponse = {
+	CreateUnit: Unit
+}
+export type { CreateUnitRequest, CreateUnitResponse }

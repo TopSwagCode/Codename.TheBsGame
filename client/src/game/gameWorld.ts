@@ -1,11 +1,16 @@
 import { Intersection, Object3D, Raycaster, Scene } from 'three'
 import { IGameObject } from './gameObjects/gameObject'
-import { ICordinates } from './gameObjects/gameObjectWorldData'
-import MoveableGameObject from './gameObjects/moveableGameObject'
+import { ICordinates, IGameObjectWorldData } from './gameObjects/gameObjectWorldData'
 import { IUpdate } from './gameRenderer'
 import WorldEnviroment, { WorldEnviromentDebugEnum } from './worldEnviroment'
+import CompareHelper from '../infrastructure/compareHelper'
 
 class GameWorld implements IUpdate {
+	private setGameObjectWorldDataListeners: {
+		type: keyof IGameObjectWorldData
+		handler: (id: string, data: IGameObjectWorldData) => void
+	}[]
+
 	private scene: Scene
 
 	public gameObjects: IGameObject[]
@@ -13,6 +18,7 @@ class GameWorld implements IUpdate {
 	private worldEnviroment: WorldEnviroment
 
 	constructor(scene: Scene) {
+		this.setGameObjectWorldDataListeners = []
 		this.scene = scene
 		this.worldEnviroment = new WorldEnviroment(scene)
 		this.gameObjects = []
@@ -32,23 +38,53 @@ class GameWorld implements IUpdate {
 		this.gameObjects = [...this.gameObjects, gameObject]
 	}
 
-	public getSceneIntersection = (raycaster: Raycaster): Intersection[] => {
-		return raycaster.intersectObject(this.scene, true)
+	public addSetGameObjectWorldDataListener = (prop: keyof IGameObjectWorldData, handler: (id: string, data: IGameObjectWorldData) => void): void => {
+		this.setGameObjectWorldDataListeners = [...this.setGameObjectWorldDataListeners, { type: prop, handler }]
 	}
 
-	public moveSelectedGameObjects = (destination: ICordinates): void => {
+	private notifySetGameObjectWorldDataListener = <K extends keyof IGameObjectWorldData>(id: string, prop: K, data: IGameObjectWorldData): void => {
+		this.setGameObjectWorldDataListeners
+			.filter((li) => li.type === prop)
+			.forEach((li) => {
+				li.handler(id, data)
+			})
+	}
+
+	public setGameObjectWorldData = <K extends keyof IGameObjectWorldData>(id: string, prop: K, value: IGameObjectWorldData[K]): void => {
 		this.gameObjects
-			.filter((x) => x.worldData.selected)
-			.forEach((go) => {
-				if (go instanceof MoveableGameObject) {
-					const { worldData } = go
-					worldData.destinationPosition = {
-						...worldData.destinationPosition,
-						x: destination.x,
-						z: destination.z
-					}
+			.filter((x) => x.key === id)
+			.forEach((g) => {
+				const gameObject = g
+				const changed = !CompareHelper.shallowEqual(gameObject.worldData[prop], value)
+				if (changed) {
+					gameObject.worldData[prop] = value
+					this.notifySetGameObjectWorldDataListener(id, prop, gameObject.worldData)
 				}
 			})
+	}
+
+	public setSelectedGameObjectsWorldData = <K extends keyof IGameObjectWorldData>(prop: K, value: IGameObjectWorldData[K]): void => {
+		this.forEachSelectedGameObject((go) => {
+			this.setGameObjectWorldData(go.key, prop, value)
+		})
+	}
+
+	private forEachSelectedGameObject = (callback: (gameObject: IGameObject, index: number, all: IGameObject[]) => void): void => {
+		this.gameObjects.filter((x) => x.worldData.selected).forEach(callback)
+	}
+
+	public setSelectedGameObjectsDestination = (destination: ICordinates): void => {
+		this.forEachSelectedGameObject((go) => {
+			this.setGameObjectWorldData(go.key, 'destination', {
+				...go.worldData.destination,
+				x: destination.x,
+				z: destination.z
+			})
+		})
+	}
+
+	public getSceneIntersection = (raycaster: Raycaster): Intersection[] => {
+		return raycaster.intersectObject(this.scene, true)
 	}
 
 	public getGameObjectIntersection = (raycaster: Raycaster): IGameObject | null => {
@@ -68,16 +104,15 @@ class GameWorld implements IUpdate {
 	}
 
 	public hoverGameObject = (gameObject: IGameObject | null = null): void => {
-		this.gameObjects
-			.filter((x) => x.worldData.highlighted || (gameObject !== null && x.key === gameObject.key))
-			.forEach((go) => {
-				const { worldData } = go
-				if (gameObject !== null && go.key === gameObject.key) {
-					worldData.highlighted = true
-				} else {
-					worldData.highlighted = false
-				}
-			})
+		const go = this.gameObjects.find((x) => x.worldData.highlighted || (gameObject !== null && x.key === gameObject.key))
+		if (go) {
+			const { worldData } = go
+			if (gameObject !== null && go.key === gameObject.key) {
+				worldData.highlighted = true
+			} else {
+				worldData.highlighted = false
+			}
+		}
 	}
 
 	public selectGameObject = (gameObject: IGameObject | null = null, removeExsistingSelection: boolean): void => {
