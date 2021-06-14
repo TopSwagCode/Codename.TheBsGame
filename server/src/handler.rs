@@ -1,8 +1,9 @@
 use tokio::sync::mpsc::Sender;
 
 use crate::{
+    game::commands::GameCommand,
     ws::{self, RequestType},
-    Client, Clients, GameStateRef, Result,
+    Client, Clients, GameCommandSender, GameStateRef, Result,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -24,8 +25,11 @@ pub async fn get_game_state_handler(game_state: GameStateRef) -> Result<impl Rep
     Ok(json)
 }
 
-pub async fn reset_game_state_handler(mut sender: Sender<RequestType>) -> impl Reply {
-    sender.send(RequestType::ResetGame);    
+pub async fn reset_game_state_handler(mut sender: GameCommandSender) -> impl Reply {
+    sender
+        .send(GameCommand::ResetGameCommand)
+        .await
+        .expect("Should be able to send");
     ""
 }
 
@@ -63,14 +67,12 @@ pub async fn ws_handler(
     ws: warp::ws::Ws,
     id: String,
     clients: Clients,
-    game_state: GameStateRef,
+    sender: GameCommandSender,
 ) -> Result<impl Reply> {
     let client = clients.read().await.get(&id).cloned();
     match client {
         Some(c) => {
-            Ok(ws.on_upgrade(move |socket| {
-                ws::client_connection(socket, id, clients, c, game_state)
-            }))
+            Ok(ws.on_upgrade(move |socket| ws::client_connection(socket, id, clients, c, sender)))
         }
         None => Err(warp::reject::not_found()),
     }

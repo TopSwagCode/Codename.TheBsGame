@@ -8,6 +8,8 @@ use crate::game::game_state::UnitType;
 use crate::game::resources::TimeResource;
 use crate::game::schedule::create_schedule;
 use crate::ws::RequestType;
+use game::commands::GameCommand;
+use legion::systems::CommandBuffer;
 use legion::*;
 use std::collections::HashMap;
 use std::convert::Infallible;
@@ -25,6 +27,9 @@ mod ws;
 type Result<T> = std::result::Result<T, Rejection>;
 type Clients = Arc<RwLock<HashMap<String, Client>>>;
 type GameStateRef = Arc<RwLock<GameState>>;
+type GameCommandSender = mpsc::Sender<GameCommand>;
+
+type UidEntityMap = HashMap<String, Entity>;
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -35,7 +40,7 @@ pub struct Client {
 #[tokio::main]
 async fn main() {
     let game_state = Arc::new(RwLock::new(GameState::default()));
-    let (sender, mut receiver) = mpsc::channel::<RequestType>(1000);
+    let (sender, mut receiver) = mpsc::channel::<GameCommand>(1000);
 
     let game_state_ref = game_state.clone();
     thread::spawn(move || {
@@ -50,15 +55,22 @@ async fn main() {
 
         let mut resources = Resources::default();
         resources.insert(TimeResource::default());
+        resources.insert(UidEntityMap::default());
 
         loop {
             let before = SystemTime::now();
-
-            match receiver.try_recv() {
-                Ok(_) => "",
-                Err(_) => "",
-            };
-
+            {
+                let mut command_buffer = CommandBuffer::new(&world);
+                while let Ok(command) = receiver.try_recv() {
+                    if matches!(command, GameCommand::ResetGameCommand) {
+                        world = World::default();
+                    } else {
+                        // The extra 1 here, is to get around bug that you need 2 components when pushing to buffer
+                        command_buffer.push((command, 1));
+                    }
+                }
+                command_buffer.flush(&mut world, &mut resources);
+            }
             schedule.execute(&mut world, &mut resources);
             let elapsed_duration = before.elapsed().unwrap();
             let mut time = resources
@@ -106,12 +118,6 @@ async fn main() {
         .and_then(move |my_sender| async move {
             Ok::<_, Infallible>(handler::reset_game_state_handler(my_sender).await)
         });
-    // let reset_route_post = reset_path
-    //     .and(warp::post())
-    //     .and(with_sender(sender.clone()))
-    //     .and_then(move |my_sender: Sender<RequestType>| async move {
-    //         Ok(handler::reset_game_state_handler(my_sender.clone()).await)
-    //     });
 
     let register = warp::path("register");
     let register_routes = register
@@ -129,7 +135,7 @@ async fn main() {
         .and(warp::ws())
         .and(warp::path::param())
         .and(with_clients(clients))
-        .and(with_game_state(game_state))
+        .and(with_sender(sender.clone()))
         .and_then(handler::ws_handler);
     let cors = warp::cors()
         .allow_any_origin()
