@@ -78,10 +78,10 @@ class GameStateDataService {
 	}
 
 	private onMessageRecived = (e: MessageEvent): void => {
-		const msg: WebsocketMessage = JSON.parse(e.data)
-		if ((msg as CreateUnitMessage).CreatUnit) {
-			this.notifyHandlers('CreateUnit', msg)
-		}
+		// const msg: WebsocketMessage = JSON.parse(e.data)
+		// if ((msg as CreateUnitMessage).CreatUnit) {
+		// 	this.notifyHandlers('CreateUnit', msg)
+		// }
 	}
 }
 
