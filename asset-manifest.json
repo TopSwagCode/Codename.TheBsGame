@@ -1,22 +1,22 @@
 {
   "files": {
-    "main.css": "/Codename.TheBsGame/static/css/main.a9d6424a.chunk.css",
-    "main.js": "/Codename.TheBsGame/static/js/main.d767c761.chunk.js",
-    "main.js.map": "/Codename.TheBsGame/static/js/main.d767c761.chunk.js.map",
+    "main.css": "/Codename.TheBsGame/static/css/main.e69f694c.chunk.css",
+    "main.js": "/Codename.TheBsGame/static/js/main.01ed01e4.chunk.js",
+    "main.js.map": "/Codename.TheBsGame/static/js/main.01ed01e4.chunk.js.map",
     "runtime-main.js": "/Codename.TheBsGame/static/js/runtime-main.2ad42463.js",
     "runtime-main.js.map": "/Codename.TheBsGame/static/js/runtime-main.2ad42463.js.map",
-    "static/js/2.1e8b4e8b.chunk.js": "/Codename.TheBsGame/static/js/2.1e8b4e8b.chunk.js",
-    "static/js/2.1e8b4e8b.chunk.js.map": "/Codename.TheBsGame/static/js/2.1e8b4e8b.chunk.js.map",
+    "static/js/2.422e2903.chunk.js": "/Codename.TheBsGame/static/js/2.422e2903.chunk.js",
+    "static/js/2.422e2903.chunk.js.map": "/Codename.TheBsGame/static/js/2.422e2903.chunk.js.map",
     "index.html": "/Codename.TheBsGame/index.html",
-    "static/css/main.a9d6424a.chunk.css.map": "/Codename.TheBsGame/static/css/main.a9d6424a.chunk.css.map",
-    "static/js/2.1e8b4e8b.chunk.js.LICENSE.txt": "/Codename.TheBsGame/static/js/2.1e8b4e8b.chunk.js.LICENSE.txt",
+    "static/css/main.e69f694c.chunk.css.map": "/Codename.TheBsGame/static/css/main.e69f694c.chunk.css.map",
+    "static/js/2.422e2903.chunk.js.LICENSE.txt": "/Codename.TheBsGame/static/js/2.422e2903.chunk.js.LICENSE.txt",
     "static/media/tower-icon.5d90a352.svg": "/Codename.TheBsGame/static/media/tower-icon.5d90a352.svg",
     "static/media/well-icon.a58b4836.svg": "/Codename.TheBsGame/static/media/well-icon.a58b4836.svg"
   },
   "entrypoints": [
     "static/js/runtime-main.2ad42463.js",
-    "static/js/2.1e8b4e8b.chunk.js",
-    "static/css/main.a9d6424a.chunk.css",
-    "static/js/main.d767c761.chunk.js"
+    "static/js/2.422e2903.chunk.js",
+    "static/css/main.e69f694c.chunk.css",
+    "static/js/main.01ed01e4.chunk.js"
   ]
 }
