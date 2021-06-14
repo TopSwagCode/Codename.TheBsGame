@@ -1,70 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-this-alias */
 /* eslint-disable no-restricted-properties */
 /* eslint-disable @typescript-eslint/no-shadow */
 import { EventDispatcher, Matrix4, MOUSE, PerspectiveCamera, Quaternion, Spherical, TOUCH, Vector2, Vector3 } from 'three'
+import logger from '../../infrastructure/logger'
 
 const changeEvent = { type: 'change' }
 const startEvent = { type: 'start' }
 const endEvent = { type: 'end' }
-interface ICameraOrbitControls {
-	camera: PerspectiveCamera
-	domElement: HTMLElement
 
-	// API
-	enabled: boolean
-	target: Vector3
+const warn = logger('camControls_', 'warn')
 
-	minDistance: number
-	maxDistance: number
-
-	minZoom: number
-	maxZoom: number
-
-	minPolarAngle: number
-	maxPolarAngle: number
-
-	minAzimuthAngle: number
-	maxAzimuthAngle: number
-
-	enableDamping: boolean
-	dampingFactor: number
-
-	enableZoom: boolean
-	zoomSpeed: number
-
-	enableRotate: boolean
-	rotateSpeed: number
-
-	enablePan: boolean
-	panSpeed: number
-	screenSpacePanning: boolean
-	keyPanSpeed: number
-
-	autoRotate: boolean
-	autoRotateSpeed: number
-
-	keys: { LEFT: string; UP: string; RIGHT: string; BOTTOM: string }
-	mouseButtons: { LEFT: MOUSE; MIDDLE: MOUSE; RIGHT: MOUSE }
-	touches: { ONE: TOUCH; TWO: TOUCH }
-
-	update(): boolean
-
-	listenToKeyEvents(domElement: HTMLElement): void
-
-	saveState(): void
-
-	reset(): void
-
-	dispose(): void
-
-	getPolarAngle(): number
-
-	getAzimuthalAngle(): number
-}
-
-class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControls {
+class CameraOrbitControls extends EventDispatcher {
 	camera: PerspectiveCamera
 
 	domElement: HTMLElement
@@ -144,7 +91,7 @@ class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControl
 	constructor(camera: PerspectiveCamera, domElement: HTMLElement) {
 		super()
 
-		if (domElement === undefined) console.warn('THREE.OrbitControls: The second parameter "domElement" is now mandatory.')
+		if (domElement === undefined) warn('THREE.OrbitControls: The second parameter "domElement" is now mandatory.')
 
 		this.camera = camera
 		this.domElement = domElement
@@ -387,7 +334,6 @@ class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControl
 			scope.domElement.ownerDocument.removeEventListener('pointerup', onPointerUp)
 
 			if (scope.domElementKeyEvents !== null) {
-				// eslint-disable-next-line no-underscore-dangle
 				scope.domElementKeyEvents.removeEventListener('keydown', onKeyDown)
 			}
 
@@ -498,16 +444,9 @@ class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControl
 					// we use only clientHeight here so aspect ratio does not distort speed
 					panLeft((2 * deltaX * targetDistance) / element.clientHeight, scope.camera.matrix)
 					panUp((2 * deltaY * targetDistance) / element.clientHeight, scope.camera.matrix)
-				}
-				// else if (scope.camera.isOrthographicCamera) {
-				// 	// isOrthographicCamera
-				// 	// orthographic
-				// 	panLeft((deltaX * (scope.camera.right - scope.camera.left)) / scope.camera.zoom / element.clientWidth, scope.camera.matrix)
-				// 	panUp((deltaY * (scope.camera.top - scope.camera.bottom)) / scope.camera.zoom / element.clientHeight, scope.camera.matrix)
-				// }
-				else {
+				} else {
 					// camera neither orthographic nor perspective
-					console.warn('WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.')
+					warn('WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.')
 					scope.enablePan = false
 				}
 			}
@@ -516,14 +455,8 @@ class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControl
 		function dollyOut(dollyScale: number): void {
 			if (scope.camera.isPerspectiveCamera) {
 				scale /= dollyScale
-			}
-			//  else if (scope.camera.isOrthographicCamera) {
-			// 	scope.camera.zoom = Math.max(scope.minZoom, Math.min(scope.maxZoom, scope.camera.zoom * dollyScale))
-			// 	scope.camera.updateProjectionMatrix()
-			// 	zoomChanged = true
-			// }
-			else {
-				console.warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.')
+			} else {
+				warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.')
 				scope.enableZoom = false
 			}
 		}
@@ -531,21 +464,11 @@ class CameraOrbitControls extends EventDispatcher implements ICameraOrbitControl
 		function dollyIn(dollyScale: number): void {
 			if (scope.camera.isPerspectiveCamera) {
 				scale *= dollyScale
-			}
-			// else if (scope.camera.isOrthographicCamera) {
-			// 	scope.camera.zoom = Math.max(scope.minZoom, Math.min(scope.maxZoom, scope.camera.zoom / dollyScale))
-			// 	scope.camera.updateProjectionMatrix()
-			// 	zoomChanged = true
-			// }
-			else {
-				console.warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.')
+			} else {
+				warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.')
 				scope.enableZoom = false
 			}
 		}
-
-		//
-		// event callbacks - update the object state
-		//
 
 		function handleMouseDownRotate(event: { clientX: number; clientY: number }): void {
 			rotateStart.set(event.clientX, event.clientY)

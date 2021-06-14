@@ -1,9 +1,10 @@
-import { ConnectResponse, CreateUnitMessage, GameState } from './models'
-import SetUnitMessage from './models/setUnitMessage'
+import { ConnectResponse, CreateUnitRequest, CreateUnitResponse, GameState, SetUnitPosition, SetUnitDestination } from './models'
+import logger from '../../infrastructure/logger'
 
 interface WebsocketMessages {
-	CreateUnit: CreateUnitMessage
-	SetUnit: SetUnitMessage
+	CreateUnit: CreateUnitResponse
+	SetUnitPosition: SetUnitPosition
+	SetUnitDestination: SetUnitDestination
 }
 
 type WebsocketMessageType = keyof WebsocketMessages
@@ -16,9 +17,11 @@ interface MessageHandler {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	handler: MessageHandlerCallback<any & WebsocketMessage>
 }
-
+const log = logger('server_')
 class GameStateDataService {
 	private apiUri: string
+
+	private wsUri: string
 
 	private socket: WebSocket | undefined
 
@@ -26,6 +29,8 @@ class GameStateDataService {
 
 	constructor() {
 		this.apiUri = process.env.REACT_APP_SERVER_API
+		this.wsUri = process.env.REACT_APP_SERVER_WS
+
 		this.messageHandlers = []
 	}
 
@@ -40,25 +45,33 @@ class GameStateDataService {
 				},
 				body: JSON.stringify({ user_id: userId })
 			})
-				.then((r) => r.json())
-				.then((r: ConnectResponse) => r.url)
+				.then((r) => {
+					return r.json()
+				})
+				.then((r: ConnectResponse): string => {
+					return r.url
+				})
 				.then((url) => {
-					const socket = new WebSocket(url)
+					const socket = new WebSocket(`${this.wsUri}/${url}`)
 					socket.onopen = () => {
+						socket.onmessage = this.onMessageRecived
 						this.socket = socket
 						resolve(true)
 					}
-					socket.onmessage = this.onMessageRecived
 				})
 				.catch(() => reject())
 		})
 
 	public createUnit = (x: number, z: number): void => {
-		this.socket?.send(JSON.stringify({ CreatUnit: { position: [x, z] } }))
+		this.socket?.send(JSON.stringify({ CreateUnit: { position: [x, z] } } as CreateUnitRequest))
 	}
 
-	public setUnit = (id: string, x: number, z: number): void => {
-		this.socket?.send(JSON.stringify({ SetUnit: { position: [x, z], id } }))
+	public setUnitPosition = (id: string, x: number, z: number): void => {
+		this.socket?.send(JSON.stringify({ SetUnitPosition: { position: [x, z], id } } as SetUnitPosition))
+	}
+
+	public setUnitDestination = (id: string, x: number, z: number): void => {
+		this.socket?.send(JSON.stringify({ SetUnitDestination: { destination: [x, z], id } } as SetUnitDestination))
 	}
 
 	public fetchInitialGameState = (): Promise<GameState> =>
@@ -70,7 +83,7 @@ class GameStateDataService {
 		})
 
 	public addMessageHandler: AddMessageHandler = (type, handler) => {
-		this.messageHandlers = [{ type, handler }]
+		this.messageHandlers = [...this.messageHandlers, { type, handler }]
 	}
 
 	private notifyHandlers = (type: WebsocketMessageType, message: WebsocketMessage): void => {
@@ -79,8 +92,16 @@ class GameStateDataService {
 
 	private onMessageRecived = (e: MessageEvent): void => {
 		const msg: WebsocketMessage = JSON.parse(e.data)
-		if ((msg as CreateUnitMessage).CreatUnit) {
+		// eslint-disable-next-line no-console
+		log('message', msg)
+		if ((msg as CreateUnitResponse).CreateUnit) {
 			this.notifyHandlers('CreateUnit', msg)
+		}
+		if ((msg as SetUnitDestination).SetUnitDestination) {
+			this.notifyHandlers('SetUnitDestination', msg)
+		}
+		if ((msg as SetUnitPosition).SetUnitPosition) {
+			this.notifyHandlers('SetUnitPosition', msg)
 		}
 	}
 }
