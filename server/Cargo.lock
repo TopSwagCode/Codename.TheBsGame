@@ -840,6 +840,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "proc_vector2d"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42ecc0faae16de3ca772d9083ce96872ab6758767deb1efb46e954dfc1d98342"
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1175,6 +1181,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "uuid 0.4.0",
+ "vector2d",
  "warp",
 ]
 
@@ -1431,6 +1438,15 @@ checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
  "getrandom 0.2.3",
  "serde 1.0.126",
+]
+
+[[package]]
+name = "vector2d"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0ec481eac35d50b7544c58613da9f823561612b0221e67bdf04823b4c6e1358"
+dependencies = [
+ "proc_vector2d",
 ]
 
 [[package]]
