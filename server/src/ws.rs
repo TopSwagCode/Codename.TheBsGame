@@ -96,6 +96,11 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, sender: GameComma
         return;
     }
     let response = handle_request(message, sender).await;
+    
+    send_response(response, clients).await;
+}
+
+async fn send_response(response: Option<String>, clients: &std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<String, Client>>>) {
     if let Some(response) = response {
         clients.read().await.iter().for_each(|c| match &c.1.sender {
             Some(sender) => {
