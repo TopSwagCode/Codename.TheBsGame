@@ -1,14 +1,11 @@
 use crate::{
-    game::{
-        self,
-        game_state::{Unit},
-    },
+    game::{self, game_state::Unit},
     Client, Clients, GameCommandSender,
 };
 
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str};
+use serde_json::{to_string,from_str};
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
@@ -38,7 +35,7 @@ pub struct SetUnitDestinationRequest {
 
 #[derive(Deserialize, Debug, Clone)]
 pub enum RequestType {
-    CreatUnit(CreateUnitRequest),
+    CreateUnit(CreateUnitRequest),
     SetUnitDestination(SetUnitDestinationRequest),
     ResetGame,
 }
@@ -96,11 +93,14 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, sender: GameComma
         return;
     }
     let response = handle_request(message, sender).await;
-    
+
     send_response(response, clients).await;
 }
 
-async fn send_response(response: Option<String>, clients: &std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<String, Client>>>) {
+async fn send_response(
+    response: Option<String>,
+    clients: &std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<String, Client>>>,
+) {
     if let Some(response) = response {
         clients.read().await.iter().for_each(|c| match &c.1.sender {
             Some(sender) => {
@@ -116,16 +116,23 @@ async fn handle_request(message: &str, mut sender: GameCommandSender) -> Option<
     use RequestType::*;
 
     match request {
-        Ok(CreatUnit(CreateUnitRequest { position })) => {
+        Ok(CreateUnit(CreateUnitRequest { position })) => {
             let uuid = Uuid::new_v4().simple().to_string();
+
+            let unit = Unit {
+                position: position,
+                destination: position,
+                id: uuid,
+            };
+            let unit_response = ResponseType::CreateUnit(unit.clone());            
+            let response_string = to_string(&unit_response).expect("Should be able to respond");
             sender
-                .send(game::commands::GameCommand::CreateUnitCommand {
-                    position,
-                    uuid: uuid.clone(),
+                .send(game::commands::GameCommand::CreateUnitCommand {                    
+                    unit,
                 })
                 .await
                 .expect("Should be able to send");
-            Some(uuid)
+            Some(response_string)
         }
         Ok(SetUnitDestination(SetUnitDestinationRequest { id, destination })) => {
             sender

@@ -2,9 +2,8 @@ use crate::game::components::Position;
 use crate::game::components::UnitId;
 use crate::game::components::Velocity;
 // #![windows_subsystem = "windows"]
-use crate::game::game_state::GameState;
+use crate::game::game_state::GameStateCache;
 use crate::game::game_state::Unit;
-use crate::game::game_state::UnitType;
 use crate::game::resources::TimeResource;
 use crate::game::schedule::create_schedule;
 use game::commands::GameCommand;
@@ -25,7 +24,7 @@ mod ws;
 
 type Result<T> = std::result::Result<T, Rejection>;
 type Clients = Arc<RwLock<HashMap<String, Client>>>;
-type GameStateRef = Arc<RwLock<GameState>>;
+type GameStateRef = Arc<RwLock<GameStateCache>>;
 type GameCommandSender = mpsc::Sender<GameCommand>;
 
 type UidEntityMap = HashMap<String, Entity>;
@@ -38,10 +37,10 @@ pub struct Client {
 
 #[tokio::main]
 async fn main() {
-    let game_state = Arc::new(RwLock::new(GameState::default()));
+    let game_state = Arc::new(RwLock::new(GameStateCache::default()));
     let (sender, mut receiver) = mpsc::channel::<GameCommand>(1000);
 
-    let game_state_ref = game_state.clone();
+    let game_state_cache_ref = game_state.clone();
     thread::spawn(move || {
         let mut world = World::default();
         let uuid = Uuid::new_v4().simple().to_string();
@@ -77,14 +76,13 @@ async fn main() {
                 .expect("Must have a time resource");
             time.ticks += 1;
 
-            let mut new_game_state = GameState::default();
+            let mut new_game_state_cache = GameStateCache::default();
             <(&Position, &UnitId)>::query().for_each(&world, |(pos, id)| {
-                new_game_state.units.insert(
+                new_game_state_cache.units.insert(
                     id.id.clone(),
                     Unit {
                         destination:(pos.x, pos.y),
                         position: (pos.x, pos.y),
-                        unit_type: UnitType::Normal,
                         id: id.id.clone(),
                     },
                 );
@@ -92,8 +90,8 @@ async fn main() {
             {
                 // This block_on is used to make the game thread block on an async.
                 // We don't want the game thread to use async, since it will require it to
-                let mut lock = futures::executor::block_on(game_state_ref.write());
-                lock.units = new_game_state.units;
+                let mut lock = futures::executor::block_on(game_state_cache_ref.write());
+                lock.units = new_game_state_cache.units;
             }
 
             thread::sleep(Duration::from_secs(1) - elapsed_duration);

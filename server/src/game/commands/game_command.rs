@@ -1,6 +1,8 @@
+use crate::game::game_state::Unit;
+
 #[derive(Debug)]
 pub enum GameCommand {
-    CreateUnitCommand { position: (f32, f32), uuid: String },
+    CreateUnitCommand { unit: Unit },
     SetUnitDestinationCommand { position: (f32, f32), uuid: String },
     ResetGameCommand,
 }
