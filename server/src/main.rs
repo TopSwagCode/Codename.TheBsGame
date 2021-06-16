@@ -6,6 +6,7 @@ use crate::game::game_state::GameStateCache;
 use crate::game::game_state::Unit;
 use crate::game::resources::TimeResource;
 use crate::game::schedule::create_schedule;
+use futures::FutureExt;
 use game::commands::GameCommand;
 use legion::systems::CommandBuffer;
 use legion::*;
@@ -43,7 +44,7 @@ async fn main() {
     let game_state_cache_ref = game_state.clone();
     thread::spawn(move || {
         let mut world = World::default();
-        let uuid = Uuid::new_v4().simple().to_string();
+        let uuid = Uuid::new_v4().to_string();
         world.push((
             Position { x: 1., y: 1. },
             Velocity { dx: 0.5, dy: 1.0 },
@@ -59,7 +60,8 @@ async fn main() {
             let before = SystemTime::now();
             {
                 let mut command_buffer = CommandBuffer::new(&world);
-                while let Ok(command) = receiver.try_recv() {
+
+                while let Some(Some(command)) = receiver.recv().fuse().now_or_never() {
                     if matches!(command, GameCommand::ResetGameCommand) {
                         world = World::default();
                     } else {
@@ -81,7 +83,7 @@ async fn main() {
                 new_game_state_cache.units.insert(
                     id.id.clone(),
                     Unit {
-                        destination:(pos.x, pos.y),
+                        destination: (pos.x, pos.y),
                         position: (pos.x, pos.y),
                         id: id.id.clone(),
                     },
@@ -152,7 +154,7 @@ async fn main() {
         // .or(reset_route_post)
         .or(ws_route)
         .with(cors);
-    let address = ([0, 0, 0, 0], 80);
+    let address = ([0, 0, 0, 0], 8042);
     println!("Listening on {:?}", address);
     warp::serve(routes).run(address).await;
 }

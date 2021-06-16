@@ -1,5 +1,4 @@
-FROM rust
-
+FROM gcr.io/distroless/cc
 WORKDIR /app
 EXPOSE 80
 EXPOSE 8000

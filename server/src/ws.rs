@@ -7,6 +7,7 @@ use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::{to_string,from_str};
 use tokio::sync::mpsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
 
@@ -55,8 +56,9 @@ pub async fn client_connection(
 ) {
     let (client_ws_sender, mut client_ws_rcv) = ws.split();
     let (client_sender, client_rcv) = mpsc::unbounded_channel();
+    let rx = UnboundedReceiverStream::new(client_rcv);
 
-    tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
+    tokio::task::spawn(rx.forward(client_ws_sender).map(|result| {
         if let Err(e) = result {
             eprintln!("error sending websocket msg: {}", e);
         }
@@ -117,7 +119,7 @@ async fn handle_request(message: &str, mut sender: GameCommandSender) -> Option<
 
     match request {
         Ok(CreateUnit(CreateUnitRequest { position })) => {
-            let uuid = Uuid::new_v4().simple().to_string();
+            let uuid = Uuid::new_v4().to_string();
 
             let unit = Unit {
                 position: position,
