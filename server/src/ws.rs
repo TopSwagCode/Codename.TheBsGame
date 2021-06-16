@@ -120,7 +120,7 @@ async fn handle_request(message: &str, mut sender: GameCommandSender) -> Option<
             let uuid = Uuid::new_v4().simple().to_string();
 
             let unit = Unit {
-                position: position,
+                position,
                 destination: position,
                 id: uuid,
             };

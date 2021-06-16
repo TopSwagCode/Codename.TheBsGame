@@ -23,14 +23,13 @@ pub fn destination_to_velocity(world: &mut SubWorld, command_buffer: &mut Comman
                 vel.dx = velocity.x;
                 vel.dy = velocity.y;
             }
-            None => {
-                command_buffer.add_component(
+            None => command_buffer.add_component(
                 *entity,
                 Velocity {
                     dx: velocity.x,
                     dy: velocity.y,
                 },
-            )},
+            ),
         }
     });
 }
