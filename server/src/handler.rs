@@ -24,7 +24,7 @@ pub async fn get_game_state_handler(game_state: GameStateRef) -> Result<impl Rep
     Ok(json)
 }
 
-pub async fn reset_game_state_handler(mut sender: GameCommandSender) -> impl Reply {
+pub async fn reset_game_state_handler(sender: GameCommandSender) -> impl Reply {
     sender
         .send(GameCommand::ResetGameCommand)
         .await

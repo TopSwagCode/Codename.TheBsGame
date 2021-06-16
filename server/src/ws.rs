@@ -113,7 +113,7 @@ async fn send_response(
     }
 }
 
-async fn handle_request(message: &str, mut sender: GameCommandSender) -> Option<String> {
+async fn handle_request(message: &str, sender: GameCommandSender) -> Option<String> {
     let request = from_str(&message);
     use RequestType::*;
 
@@ -122,7 +122,7 @@ async fn handle_request(message: &str, mut sender: GameCommandSender) -> Option<
             let uuid = Uuid::new_v4().to_string();
 
             let unit = Unit {
-                position: position,
+                position,
                 destination: position,
                 id: uuid,
             };

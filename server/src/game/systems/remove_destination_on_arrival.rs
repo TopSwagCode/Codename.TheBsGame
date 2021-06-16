@@ -6,7 +6,7 @@ use crate::game::components::{Destination, Position, Velocity};
 #[system(for_each)]
 pub fn remove_destination_on_arrival(
     des: &Destination,
-    vel: Option<&Velocity>,
+    _vel: Option<&Velocity>,
     pos: &mut Position,
     command_buffer: &mut CommandBuffer,
     entity: &Entity,
