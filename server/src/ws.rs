@@ -1,8 +1,12 @@
-use crate::{Client, Clients, GameStateRef, game::game_state::{Unit, UnitType}};
+use crate::{
+    game::game_state::{Unit, UnitType},
+    Client, Clients, GameStateRef,
+};
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 use tokio::sync::mpsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
 
@@ -49,8 +53,9 @@ pub async fn client_connection(
 ) {
     let (client_ws_sender, mut client_ws_rcv) = ws.split();
     let (client_sender, client_rcv) = mpsc::unbounded_channel();
+    let rx = UnboundedReceiverStream::new(client_rcv);
 
-    tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
+    tokio::task::spawn(rx.forward(client_ws_sender).map(|result| {
         if let Err(e) = result {
             eprintln!("error sending websocket msg: {}", e);
         }
@@ -77,11 +82,10 @@ pub async fn client_connection(
 }
 
 async fn handle_request(message: &str, game_state: &mut GameStateRef) -> Option<String> {
-    
     let request = from_str(&message);
     match request {
         Ok(RequestType::CreateUnit(CreateUnitRequest { position })) => {
-            let uuid = Uuid::new_v4().simple().to_string();
+            let uuid = Uuid::new_v4().to_string();
             let units = &mut game_state.write().await.units;
             let unit = Unit {
                 position: position,
@@ -89,10 +93,7 @@ async fn handle_request(message: &str, game_state: &mut GameStateRef) -> Option<
                 unit_type: UnitType::Normal,
                 id: uuid.clone(),
             };
-            units.insert(
-                uuid.clone(),
-                unit.clone(),
-            );
+            units.insert(uuid.clone(), unit.clone());
             return to_string(&ResponseType::CreateUnit(unit.clone())).ok();
         }
         Ok(RequestType::SetUnitPosition(SetUnitPositionRequest { position, id })) => {
@@ -102,7 +103,10 @@ async fn handle_request(message: &str, game_state: &mut GameStateRef) -> Option<
                     unit.position = position;
                 }
                 None => {
-                    eprintln!("Could not set position for unit, because it was not found: {}", id);
+                    eprintln!(
+                        "Could not set position for unit, because it was not found: {}",
+                        id
+                    );
                 }
             }
         }
@@ -113,14 +117,20 @@ async fn handle_request(message: &str, game_state: &mut GameStateRef) -> Option<
                     unit.destination = destination;
                 }
                 None => {
-                    eprintln!("Could not set destination for unit, because it was not found: {}", id);
+                    eprintln!(
+                        "Could not set destination for unit, because it was not found: {}",
+                        id
+                    );
                 }
             }
         }
-        Err(e) => {            
+        Err(e) => {
             let example_string = "{\"CreateUnit\":{\"position\":[10.0,15.0]}}";
             //Send something like this {"CreateUnit":{"position":[10.0,15.0]}}
-            eprintln!("error parsing message: {} , try something like this\n {}", e, example_string); 
+            eprintln!(
+                "error parsing message: {} , try something like this\n {}",
+                e, example_string
+            );
         }
     };
 
@@ -136,21 +146,18 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, game_state: &mut 
     if message == "ping" || message == "ping\n" {
         return;
     }
-    
+
     let resp = handle_request(&message, game_state).await;
-    
+
     clients.read().await.iter().for_each(|c| match &c.1.sender {
-        Some(sender) => {
-            match &resp {
-                Some(response)=> {
-                    let _result = sender.send(Ok(Message::text(response.clone())));
-                }
-                None => {
-                     let _result = sender.send(Ok(msg.clone()));
-                },
+        Some(sender) => match &resp {
+            Some(response) => {
+                let _result = sender.send(Ok(Message::text(response.clone())));
             }
-            
-        }
+            None => {
+                let _result = sender.send(Ok(msg.clone()));
+            }
+        },
         None => {}
     });
 }

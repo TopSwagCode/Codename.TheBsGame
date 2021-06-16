@@ -34,7 +34,7 @@ pub async fn reset_game_state_handler(game_state:GameStateRef) -> Result<impl Re
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
     let user_id = body.user_id;
     println!("Register Handler, user_id {}", user_id);
-    let uuid = Uuid::new_v4().simple().to_string();
+    let uuid = Uuid::new_v4().to_string();
 
     register_client(uuid.clone(), user_id, clients).await;
     Ok(json(&RegisterResponse {
