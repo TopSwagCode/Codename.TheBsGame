@@ -1,3 +1,4 @@
+use crate::game::components::Destination;
 use crate::game::components::Position;
 use crate::game::components::UnitId;
 use crate::game::components::Velocity;
@@ -79,16 +80,20 @@ async fn main() {
             time.ticks += 1;
 
             let mut new_game_state_cache = GameStateCache::default();
-            <(&Position, &UnitId)>::query().for_each(&world, |(pos, id)| {
-                new_game_state_cache.units.insert(
-                    id.id.clone(),
-                    Unit {
-                        destination: (pos.x, pos.y),
-                        position: (pos.x, pos.y),
-                        id: id.id.clone(),
-                    },
-                );
-            });
+            <(&Position, Option<&Destination>, &UnitId)>::query().for_each(
+                &world,
+                |(pos, des_op, id)| {
+                    let des = des_op.map(|s| (s.x, s.y)).unwrap_or((pos.x, pos.y));
+                    new_game_state_cache.units.insert(
+                        id.id.clone(),
+                        Unit {
+                            destination: des,
+                            position: (pos.x, pos.y),
+                            id: id.id.clone(),
+                        },
+                    );
+                },
+            );
             {
                 // This block_on is used to make the game thread block on an async.
                 // We don't want the game thread to use async, since it will require it to
