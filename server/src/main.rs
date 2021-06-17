@@ -96,7 +96,10 @@ async fn main() {
                 lock.units = new_game_state_cache.units;
             }
 
-            thread::sleep(Duration::from_secs(1) - elapsed_duration);
+            let target_interval = Duration::from_secs(1);
+            if elapsed_duration.le(&target_interval) {
+                thread::sleep(target_interval - elapsed_duration);
+            }
             time.elapsed_seconds = before.elapsed().unwrap().as_secs_f64();
         }
     });
