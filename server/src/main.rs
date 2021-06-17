@@ -1,11 +1,24 @@
+use crate::game::components::Destination;
+use crate::game::components::Position;
+use crate::game::components::UnitId;
+use crate::game::components::Velocity;
 // #![windows_subsystem = "windows"]
+use crate::game::game_state::GameStateCache;
+use crate::game::game_state::Unit;
+use crate::game::resources::TimeResource;
+use crate::game::schedule::create_schedule;
+use futures::FutureExt;
+use game::commands::GameCommand;
+use legion::systems::CommandBuffer;
+use legion::*;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
+use std::thread;
+use std::time::{Duration, SystemTime};
 use tokio::sync::{mpsc, RwLock};
+use uuid::Uuid;
 use warp::{ws::Message, Filter, Rejection};
-
-use crate::game::game_state::GameState;
 
 mod game;
 mod handler;
@@ -13,7 +26,10 @@ mod ws;
 
 type Result<T> = std::result::Result<T, Rejection>;
 type Clients = Arc<RwLock<HashMap<String, Client>>>;
-type GameStateRef = Arc<RwLock<GameState>>;
+type GameStateRef = Arc<RwLock<GameStateCache>>;
+type GameCommandSender = mpsc::Sender<GameCommand>;
+
+type UidEntityMap = HashMap<String, Entity>;
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -23,11 +39,79 @@ pub struct Client {
 
 #[tokio::main]
 async fn main() {
+    let game_state = Arc::new(RwLock::new(GameStateCache::default()));
+    let (sender, mut receiver) = mpsc::channel::<GameCommand>(1000);
+
+    let game_state_cache_ref = game_state.clone();
+    thread::spawn(move || {
+        let mut world = World::default();
+        let uuid = Uuid::new_v4().to_string();
+        world.push((
+            Position { x: 1., y: 1. },
+            Velocity { dx: 0.5, dy: 1.0 },
+            UnitId { id: uuid },
+        ));
+        let mut schedule = create_schedule();
+
+        let mut resources = Resources::default();
+        resources.insert(TimeResource::default());
+        resources.insert(UidEntityMap::default());
+
+        loop {
+            let before = SystemTime::now();
+            {
+                let mut command_buffer = CommandBuffer::new(&world);
+
+                while let Some(Some(command)) = receiver.recv().fuse().now_or_never() {
+                    if matches!(command, GameCommand::ResetGameCommand) {
+                        world = World::default();
+                    } else {
+                        // The extra 1 here, is to get around bug that you need 2 components when pushing to buffer
+                        command_buffer.push((command, 1));
+                    }
+                }
+                command_buffer.flush(&mut world, &mut resources);
+            }
+            schedule.execute(&mut world, &mut resources);
+            let elapsed_duration = before.elapsed().unwrap();
+            let mut time = resources
+                .get_mut::<TimeResource>()
+                .expect("Must have a time resource");
+            time.ticks += 1;
+
+            let mut new_game_state_cache = GameStateCache::default();
+            <(&Position, Option<&Destination>, &UnitId)>::query().for_each(
+                &world,
+                |(pos, des_op, id)| {
+                    let des = des_op.map(|s| (s.x, s.y)).unwrap_or((pos.x, pos.y));
+                    new_game_state_cache.units.insert(
+                        id.id.clone(),
+                        Unit {
+                            destination: des,
+                            position: (pos.x, pos.y),
+                            id: id.id.clone(),
+                        },
+                    );
+                },
+            );
+            {
+                // This block_on is used to make the game thread block on an async.
+                // We don't want the game thread to use async, since it will require it to
+                let mut lock = futures::executor::block_on(game_state_cache_ref.write());
+                lock.units = new_game_state_cache.units;
+            }
+
+            let target_interval = Duration::from_secs(1);
+            if elapsed_duration.le(&target_interval) {
+                thread::sleep(target_interval - elapsed_duration);
+            }
+            time.elapsed_seconds = before.elapsed().unwrap().as_secs_f64();
+        }
+    });
+
     let clients: Clients = Arc::new(RwLock::new(HashMap::new()));
 
     let health_route = warp::path!("health").and_then(handler::health_handler);
-
-    let game_state = Arc::new(RwLock::new(GameState::default()));
 
     let game = warp::path("game");
     let game_route = game
@@ -38,12 +122,10 @@ async fn main() {
     let reset_path = warp::path("reset");
     let reset_route_get = reset_path
         .and(warp::get())
-        .and(with_game_state(game_state.clone()))
-        .and_then(handler::reset_game_state_handler);
-    let reset_route_post = reset_path
-        .and(warp::post())
-        .and(with_game_state(game_state.clone()))
-        .and_then(handler::reset_game_state_handler);
+        .and(with_sender(sender.clone()))
+        .and_then(move |my_sender| async move {
+            Ok::<_, Infallible>(handler::reset_game_state_handler(my_sender).await)
+        });
 
     let register = warp::path("register");
     let register_routes = register
@@ -61,7 +143,7 @@ async fn main() {
         .and(warp::ws())
         .and(warp::path::param())
         .and(with_clients(clients))
-        .and(with_game_state(game_state))
+        .and(with_sender(sender.clone()))
         .and_then(handler::ws_handler);
     let cors = warp::cors()
         .allow_any_origin()
@@ -77,7 +159,7 @@ async fn main() {
         .or(game_route)
         .or(register_routes)
         .or(reset_route_get)
-        .or(reset_route_post)
+        // .or(reset_route_post)
         .or(ws_route)
         .with(cors);
     let address = ([0, 0, 0, 0], 80);
@@ -87,6 +169,12 @@ async fn main() {
 
 fn with_clients(clients: Clients) -> impl Filter<Extract = (Clients,), Error = Infallible> + Clone {
     warp::any().map(move || clients.clone())
+}
+
+fn with_sender<T: Send + Sync>(
+    sender: mpsc::Sender<T>,
+) -> impl Filter<Extract = (mpsc::Sender<T>,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || sender.clone())
 }
 
 fn with_game_state(

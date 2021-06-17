@@ -1,20 +1,23 @@
 use crate::{
-    game::game_state::{Unit, UnitType},
-    Client, Clients, GameStateRef,
+    game::{self, game_state::Unit},
+    Client, Clients, GameCommandSender,
 };
+
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, to_string};
+use serde_json::{to_string,from_str};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct CreateUnitRequest {
     position: (f32, f32),
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct SetUnitRequest {}
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ErrorResponse {
     message: String,
@@ -25,17 +28,17 @@ pub struct SetUnitPositionRequest {
     position: (f32, f32),
     id: String,
 }
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SetUnitDestinationRequest {
     destination: (f32, f32),
     id: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub enum RequestType {
     CreateUnit(CreateUnitRequest),
-    SetUnitPosition(SetUnitPositionRequest),
     SetUnitDestination(SetUnitDestinationRequest),
+    ResetGame,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -49,7 +52,7 @@ pub async fn client_connection(
     id: String,
     clients: Clients,
     mut client: Client,
-    mut game_state: GameStateRef,
+    sender: GameCommandSender,
 ) {
     let (client_ws_sender, mut client_ws_rcv) = ws.split();
     let (client_sender, client_rcv) = mpsc::unbounded_channel();
@@ -74,69 +77,14 @@ pub async fn client_connection(
                 break;
             }
         };
-        client_msg(&id, msg, &clients, &mut game_state).await;
+        client_msg(&id, msg, &clients, sender.clone()).await;
     }
 
     clients.write().await.remove(&id);
     println!("{} disconnected", id);
 }
 
-async fn handle_request(message: &str, game_state: &mut GameStateRef) -> Option<String> {
-    let request = from_str(&message);
-    match request {
-        Ok(RequestType::CreateUnit(CreateUnitRequest { position })) => {
-            let uuid = Uuid::new_v4().to_string();
-            let units = &mut game_state.write().await.units;
-            let unit = Unit {
-                position: position,
-                destination: position,
-                unit_type: UnitType::Normal,
-                id: uuid.clone(),
-            };
-            units.insert(uuid.clone(), unit.clone());
-            return to_string(&ResponseType::CreateUnit(unit.clone())).ok();
-        }
-        Ok(RequestType::SetUnitPosition(SetUnitPositionRequest { position, id })) => {
-            let units = &mut game_state.write().await.units;
-            match units.get_mut(&id) {
-                Some(unit) => {
-                    unit.position = position;
-                }
-                None => {
-                    eprintln!(
-                        "Could not set position for unit, because it was not found: {}",
-                        id
-                    );
-                }
-            }
-        }
-        Ok(RequestType::SetUnitDestination(SetUnitDestinationRequest { destination, id })) => {
-            let units = &mut game_state.write().await.units;
-            match units.get_mut(&id) {
-                Some(unit) => {
-                    unit.destination = destination;
-                }
-                None => {
-                    eprintln!(
-                        "Could not set destination for unit, because it was not found: {}",
-                        id
-                    );
-                }
-            }
-        }
-        Err(e) => {
-            let example_string = "{\"CreateUnit\":{\"position\":[10.0,15.0]}}";
-            //Send something like this {"CreateUnit":{"position":[10.0,15.0]}}
-            eprintln!(
-                "error parsing message: {} , try something like this\n {}",
-                e, example_string
-            );
-        }
-    };
-
-    return None;
-}
-async fn client_msg(id: &str, msg: Message, clients: &Clients, game_state: &mut GameStateRef) {
+async fn client_msg(id: &str, msg: Message, clients: &Clients, sender: GameCommandSender) {
     println!("received message from {}: {:?}", id, msg);
     let message = match msg.to_str() {
         Ok(v) => v,
@@ -146,18 +94,73 @@ async fn client_msg(id: &str, msg: Message, clients: &Clients, game_state: &mut 
     if message == "ping" || message == "ping\n" {
         return;
     }
+    let response = handle_request(message, sender).await;
 
-    let resp = handle_request(&message, game_state).await;
+    send_response(response, clients).await;
+}
 
-    clients.read().await.iter().for_each(|c| match &c.1.sender {
-        Some(sender) => match &resp {
-            Some(response) => {
+async fn send_response(
+    response: Option<String>,
+    clients: &std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<String, Client>>>,
+) {
+    if let Some(response) = response {
+        clients.read().await.iter().for_each(|c| match &c.1.sender {
+            Some(sender) => {
                 let _result = sender.send(Ok(Message::text(response.clone())));
             }
-            None => {
-                let _result = sender.send(Ok(msg.clone()));
-            }
-        },
-        None => {}
-    });
+            None => {}
+        });
+    }
+}
+
+async fn handle_request(message: &str, sender: GameCommandSender) -> Option<String> {
+    let request = from_str(&message);
+    use RequestType::*;
+
+    match request {
+        Ok(CreateUnit(CreateUnitRequest { position })) => {
+            let uuid = Uuid::new_v4().to_string();
+
+            let unit = Unit {
+                position,
+                destination: position,
+                id: uuid,
+            };
+            let unit_response = ResponseType::CreateUnit(unit.clone());            
+            let response_string = to_string(&unit_response).expect("Should be able to respond");
+            sender
+                .send(game::commands::GameCommand::CreateUnitCommand {                    
+                    unit,
+                })
+                .await
+                .expect("Should be able to send");
+            Some(response_string)
+        }
+        Ok(SetUnitDestination(SetUnitDestinationRequest { id, destination })) => {
+            sender
+                .send(game::commands::GameCommand::SetUnitDestinationCommand {
+                    position: destination,
+                    uuid: id,
+                })
+                .await
+                .expect("Should be able to send");
+            None
+        }
+        Ok(RequestType::ResetGame) => {
+            sender
+                .send(game::commands::GameCommand::ResetGameCommand)
+                .await
+                .expect("Could not send message");
+            None
+        }
+        Err(e) => {
+            let example_string = "{\"CreatUnit\":{\"position\":[10.0,15.0]}}";
+            //Send something like this {"CreatUnit":{"position":[10.0,15.0]}}
+            eprintln!(
+                "error parsing message: {} , try something like this\n {}",
+                e, example_string
+            );
+            None
+        }
+    }
 }

@@ -1,8 +1,12 @@
-use crate::{ws, Client, Clients, GameStateRef, Result};
+
+use crate::{
+    game::commands::GameCommand,
+    ws::{self},
+    Client, Clients, GameCommandSender, GameStateRef, Result,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use warp::{http::StatusCode, reply::json, Reply};
-
 
 #[derive(Serialize, Debug)]
 pub struct RegisterResponse {
@@ -14,22 +18,19 @@ pub struct RegisterRequest {
     user_id: usize,
 }
 
-
-pub async fn get_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
-    let game_state = &game_state.read().await.units;    
+pub async fn get_game_state_handler(game_state: GameStateRef) -> Result<impl Reply> {
+    let game_state = &game_state.read().await.units;
     let json = json(&game_state);
     Ok(json)
 }
 
-
-
-pub async fn reset_game_state_handler(game_state:GameStateRef) -> Result<impl Reply> {
-    let game_state = &mut game_state.write().await.units;    
-    game_state.clear();
-    let json = json(&game_state);
-    Ok(json)
+pub async fn reset_game_state_handler(sender: GameCommandSender) -> impl Reply {
+    sender
+        .send(GameCommand::ResetGameCommand)
+        .await
+        .expect("Should be able to send");
+    ""
 }
-
 
 pub async fn register_handler(body: RegisterRequest, clients: Clients) -> Result<impl Reply> {
     let user_id = body.user_id;
@@ -61,19 +62,16 @@ pub async fn unregister_handler(id: String, clients: Clients) -> Result<impl Rep
     Ok(StatusCode::OK)
 }
 
-
 pub async fn ws_handler(
     ws: warp::ws::Ws,
     id: String,
     clients: Clients,
-    game_state: GameStateRef,
+    sender: GameCommandSender,
 ) -> Result<impl Reply> {
     let client = clients.read().await.get(&id).cloned();
     match client {
         Some(c) => {
-            Ok(ws.on_upgrade(move |socket| {
-                ws::client_connection(socket, id, clients, c, game_state)
-            }))
+            Ok(ws.on_upgrade(move |socket| ws::client_connection(socket, id, clients, c, sender)))
         }
         None => Err(warp::reject::not_found()),
     }
