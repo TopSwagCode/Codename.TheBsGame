@@ -144,7 +144,7 @@ async fn handle_request(message: &str, sender: GameCommandSender) -> Option<Stri
                 })
                 .await
                 .expect("Should be able to send");
-            None
+            Some(message.to_string())
         }
         Ok(RequestType::ResetGame) => {
             sender
