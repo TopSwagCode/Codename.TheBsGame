@@ -31,30 +31,25 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 	}
 
 	private move(source: ICordinates, destination: ICordinates, delta: number): ICordinates {
+		const direction = {
+			x: destination.x - source.x,
+			y: destination.y - source.y,
+			z: destination.z - source.z
+		}
+		const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+		if (magnitude === 0) {
+			return source
+		}
+		const movement = {
+			x: (direction.x / magnitude) * delta * this.movementSpeed,
+			y: (direction.y / magnitude) * delta * this.movementSpeed,
+			z: (direction.z / magnitude) * delta * this.movementSpeed
+		}
 		return {
-			x: this.getDistanceToMove(source.x, destination.x, delta),
-			y: this.getDistanceToMove(source.y, destination.y, delta),
-			z: this.getDistanceToMove(source.z, destination.z, delta)
+			x: movement.x + source.x,
+			y: movement.y + source.y,
+			z: movement.z + source.z
 		}
-	}
-
-	private getDistanceToMove = (source: number, destination: number, delta: number): number => {
-		let newPostion: number = source
-		let moveDistance = delta * this.movementSpeed
-		const diff = Math.abs(destination - source)
-		if (diff === 0) {
-			return destination
-		}
-		if (diff < moveDistance) {
-			moveDistance = diff
-		}
-		if (source > destination) {
-			newPostion = source - moveDistance
-		}
-		if (source < destination) {
-			newPostion = source + moveDistance
-		}
-		return newPostion
 	}
 }
 export default MoveableGameObject
