@@ -3,7 +3,7 @@ import ModelLoader, { LoadedModels } from './loaders/modelLoader'
 import { IGameObject } from './gameObjects/gameObject'
 import MoveableGameObject from './gameObjects/moveableGameObject'
 import GameStateDataService from './services/gameStateDataService'
-import { CreateUnitResponse, SetUnitDestination, SetUnitPosition } from './services/models'
+import { CreateUnitResponse, SetUnitDestination } from './services/models'
 import GameWorld from './gameWorld'
 import GameRenderer from './gameRenderer'
 import GameControls from './controls/gameControls'
@@ -121,10 +121,6 @@ class Game {
 		)
 	}
 
-	private handleGameObjectReachedDestination = (obj: MoveableGameObject): void => {
-		// this.gameStateDataService.setUnitPosition(obj.key, obj.worldData.position.x, obj.worldData.position.z)
-	}
-
 	private createMoveableTower = (id: string, posX: number, posZ: number, desX: number, desZ: number): IGameObject => this.createMoveableGameObject('tower', id, posX, posZ, desX, desZ)
 
 	private createMoveableWell = (id: string, posX: number, posZ: number, desX: number, desZ: number): IGameObject => this.createMoveableGameObject('well', id, posX, posZ, desX, desZ)
@@ -132,7 +128,6 @@ class Game {
 	private createMoveableGameObject = (modelKey: keyof LoadedModels, id: string, posX: number, posZ: number, desX: number, desZ: number): IGameObject => {
 		const model = this.modelLoader.loadedModels[modelKey]
 		const gameObj = new MoveableGameObject(id, Object3DHelper.setShadows(model.object))
-		gameObj.destinationReached = this.handleGameObjectReachedDestination
 		gameObj.worldData.position.y = 0.1
 		gameObj.worldData.position.x = posX
 		gameObj.worldData.position.z = posZ
