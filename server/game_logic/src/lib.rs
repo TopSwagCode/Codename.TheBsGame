@@ -89,6 +89,5 @@ impl GameLogic {
             }
         }
         command_buffer.flush(&mut self.world, &mut self.resources);
-
     }
 }

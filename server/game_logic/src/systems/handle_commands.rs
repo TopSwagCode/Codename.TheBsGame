@@ -1,12 +1,11 @@
 use legion::{system, systems::CommandBuffer, world::SubWorld, Entity, EntityStore};
 
+use crate::game_state::UidEntityMap;
 use crate::{
     commands::GameCommand,
     components::{Destination, Position, UnitId},
     game_state::Unit,
 };
-use crate::game_state::UidEntityMap;
-
 
 #[system(for_each)]
 #[write_component(Destination)]

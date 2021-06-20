@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Unit {
     pub position: (f32, f32),
-    pub destination: (f32, f32),    
+    pub destination: (f32, f32),
     pub id: String,
 }
 #[derive(Serialize, Deserialize, Default)]
