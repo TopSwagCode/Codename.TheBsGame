@@ -36,19 +36,24 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 			y: destination.y - source.y,
 			z: destination.z - source.z
 		}
-		const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
-		if (magnitude === 0) {
+		const posToDesLength = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+		if (posToDesLength === 0) {
 			return source
 		}
-		const movement = {
-			x: (direction.x / magnitude) * delta * this.movementSpeed,
-			y: (direction.y / magnitude) * delta * this.movementSpeed,
-			z: (direction.z / magnitude) * delta * this.movementSpeed
+		const velocity = {
+			x: (direction.x / posToDesLength) * delta * this.movementSpeed,
+			y: (direction.y / posToDesLength) * delta * this.movementSpeed,
+			z: (direction.z / posToDesLength) * delta * this.movementSpeed
 		}
+		const velocityMagnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z)
+		if (posToDesLength < velocityMagnitude) {
+			return destination
+		}
+
 		return {
-			x: movement.x + source.x,
-			y: movement.y + source.y,
-			z: movement.z + source.z
+			x: velocity.x + source.x,
+			y: velocity.y + source.y,
+			z: velocity.z + source.z
 		}
 	}
 }
