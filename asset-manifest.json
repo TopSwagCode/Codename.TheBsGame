@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/Codename.TheBsGame/static/css/main.e69f694c.chunk.css",
-    "main.js": "/Codename.TheBsGame/static/js/main.01ed01e4.chunk.js",
-    "main.js.map": "/Codename.TheBsGame/static/js/main.01ed01e4.chunk.js.map",
+    "main.js": "/Codename.TheBsGame/static/js/main.03239393.chunk.js",
+    "main.js.map": "/Codename.TheBsGame/static/js/main.03239393.chunk.js.map",
     "runtime-main.js": "/Codename.TheBsGame/static/js/runtime-main.2ad42463.js",
     "runtime-main.js.map": "/Codename.TheBsGame/static/js/runtime-main.2ad42463.js.map",
     "static/js/2.422e2903.chunk.js": "/Codename.TheBsGame/static/js/2.422e2903.chunk.js",
@@ -17,6 +17,6 @@
     "static/js/runtime-main.2ad42463.js",
     "static/js/2.422e2903.chunk.js",
     "static/css/main.e69f694c.chunk.css",
-    "static/js/main.01ed01e4.chunk.js"
+    "static/js/main.03239393.chunk.js"
   ]
 }
