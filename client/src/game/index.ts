@@ -61,7 +61,6 @@ class Game {
 		if (connected) {
 			this.gameStateDataService.addMessageHandler('CreateUnit', this.handleServerCreateUnit)
 			this.gameStateDataService.addMessageHandler('SetUnitDestination', this.handleServerSetUnitDestination)
-			this.gameStateDataService.addMessageHandler('SetUnitPosition', this.handleServerSetUnitPosition)
 
 			this.gameRenderer.start()
 		} else {
@@ -76,13 +75,6 @@ class Game {
 		if (pos.length >= 2) {
 			this.gameWorld.addGameObject(this.createMoveableTower(id, pos[0], pos[1], pos[0], pos[1]))
 		}
-	}
-
-	private handleServerSetUnitPosition = (message: SetUnitPosition): void => {
-		// const { position: pos, id } = message.SetUnitPosition
-		// if (pos.length >= 2) {
-		// 	this.gameWorld.setGameObjectWorldData(id, 'position', { x: pos[0], z: pos[1], y: 0.1 })
-		// }
 	}
 
 	private handleServerSetUnitDestination = (message: SetUnitDestination): void => {
