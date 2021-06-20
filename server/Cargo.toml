@@ -1,25 +1,5 @@
-[package]
-name = "thebsgame-server"
-version = "0.1.0"
-edition = "2018"
-
-[dependencies]
-# Used to enabled Async in Rust
-tokio = { version = "1.7", features = ["macros", "sync", "rt-multi-thread"] }
-# Utilities to work with `Stream` and `tokio`. 
-tokio-stream = "0.1.6"
-# Web-framework that implements Websockets (and more)
-warp = "0.3"
-# serilization/deserilization Framework
-serde = { version = "1.0", features = ["derive"] }
-# Enables json serilization/deserilization
-serde_json = "1.0"
-# Futures are used when dealing with async (tokio) (think of promises from js)
-futures = { version = "0.3" }
-
-# Genereates unique ids
-uuid = { version = "0.8", features = ["serde", "v4"] }
-# Entity Component system, used for the game loop
-legion = "0.4"
-# For 2d math
-vector2d = "2.2"
+[workspace]
+members = [
+    "server",
+    "game_logic",
+]

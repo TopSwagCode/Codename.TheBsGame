@@ -1,5 +1,5 @@
 #[derive(Debug)]
 pub struct Position {
-    pub x : f32,
-    pub y : f32,
+    pub x: f32,
+    pub y: f32,
 }

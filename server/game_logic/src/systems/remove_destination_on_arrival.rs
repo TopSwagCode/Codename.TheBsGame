@@ -1,7 +1,7 @@
 use legion::{system, systems::CommandBuffer, Entity};
 use vector2d::Vector2D;
 
-use crate::game::components::{Destination, Position, Velocity};
+use crate::components::{Destination, Position, Velocity};
 
 #[system(for_each)]
 pub fn remove_destination_on_arrival(

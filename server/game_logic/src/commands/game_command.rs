@@ -1,4 +1,4 @@
-use crate::game::game_state::Unit;
+use crate::game_state::Unit;
 
 #[derive(Debug)]
 pub enum GameCommand {

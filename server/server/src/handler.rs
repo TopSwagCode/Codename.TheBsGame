@@ -1,9 +1,8 @@
-
 use crate::{
-    game::commands::GameCommand,
     ws::{self},
     Client, Clients, GameCommandSender, GameStateRef, Result,
 };
+use game_logic::commands::GameCommand;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use warp::{http::StatusCode, reply::json, Reply};
