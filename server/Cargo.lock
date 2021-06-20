@@ -1028,13 +1028,11 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "game_logic",
- "legion",
  "serde",
  "serde_json",
  "tokio",
  "tokio-stream",
  "uuid",
- "vector2d",
  "warp",
 ]
 

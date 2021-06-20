@@ -3,8 +3,6 @@ use game_logic::GameLogic;
 use futures::FutureExt;
 use game_logic::commands::GameCommand;
 use game_logic::game_state::GameStateCache;
-use legion::systems::CommandBuffer;
-use legion::*;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
@@ -38,17 +36,11 @@ async fn main() {
         loop {
             let before = SystemTime::now();
             {
-                let mut command_buffer = CommandBuffer::new(&game_logic.world);
-
+                let mut commands = vec![];
                 while let Some(Some(command)) = receiver.recv().fuse().now_or_never() {
-                    if matches!(command, GameCommand::ResetGameCommand) {
-                        game_logic.world = World::default();
-                    } else {
-                        // The extra 1 here, is to get around bug that you need 2 components when pushing to buffer
-                        command_buffer.push((command, 1));
-                    }
+                    commands.push(command);
                 }
-                command_buffer.flush(&mut game_logic.world, &mut game_logic.resources);
+                game_logic.handle_commands(commands);
             }
             game_logic.execute();
 

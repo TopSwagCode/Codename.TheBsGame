@@ -3,10 +3,8 @@ name = "game_logic"
 version = "0.1.0"
 edition = "2018"
 
-
 [lib]
 name = "game_logic"
-
 
 [dependencies]
 # Entity Component system, used for the game loop

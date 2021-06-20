@@ -1,5 +1,7 @@
+use commands::GameCommand;
 use components::{Destination, Position, UnitId};
 use game_state::{GameStateCache, UidEntityMap, Unit};
+use legion::systems::CommandBuffer;
 use legion::*;
 use legion::{Resources, Schedule, World};
 use resources::TimeResource;
@@ -18,6 +20,12 @@ pub struct GameLogic {
     pub resources: Resources,
 }
 
+impl Default for GameLogic {
+    fn default() -> Self {
+        GameLogic::new()
+    }
+}
+
 impl GameLogic {
     pub fn new() -> Self {
         let world = World::default();
@@ -34,7 +42,7 @@ impl GameLogic {
         }
     }
 
-    pub fn execute(&mut self) -> () {
+    pub fn execute(&mut self) {
         self.schedule.execute(&mut self.world, &mut self.resources);
         let mut time = self
             .resources
@@ -68,5 +76,19 @@ impl GameLogic {
             .get_mut::<TimeResource>()
             .expect("Must have a time resource");
         time.elapsed_seconds = elapsed_seconds;
+    }
+
+    pub fn handle_commands(&mut self, commands: Vec<GameCommand>) {
+        let mut command_buffer = CommandBuffer::new(&self.world);
+        for command in commands {
+            if matches!(command, GameCommand::ResetGameCommand) {
+                self.world = World::default();
+            } else {
+                // The extra 1 here, is to get around bug that you need 2 components when pushing to buffer
+                command_buffer.push((command, 1));
+            }
+        }
+        command_buffer.flush(&mut self.world, &mut self.resources);
+
     }
 }
