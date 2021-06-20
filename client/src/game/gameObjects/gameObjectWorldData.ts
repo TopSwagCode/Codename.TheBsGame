@@ -17,7 +17,7 @@ class GameObjectWorldData implements IGameObjectWorldData {
 		this.isDirty = {}
 		this.position = { x: 0, y: 0, z: 0 }
 		this.rotation = { x: 0, y: 0, z: 0 }
-		this.destination = this.position
+		this.destination = { x: 0, y: 0, z: 0 }
 		this.selected = false
 		this.highlighted = false
 	}

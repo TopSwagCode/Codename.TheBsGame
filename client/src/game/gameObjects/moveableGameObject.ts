@@ -25,7 +25,6 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 				}
 			}
 		}
-
 		super.update(time, delta)
 		// updateData('position')
 	}

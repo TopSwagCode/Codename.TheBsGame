@@ -74,15 +74,15 @@ class Game {
 	private handleServerCreateUnit = (message: CreateUnitResponse): void => {
 		const { position: pos, id } = message.CreateUnit
 		if (pos.length >= 2) {
-			this.gameWorld.addGameObject(this.createMoveableTower(id, pos[0], pos[1]))
+			this.gameWorld.addGameObject(this.createMoveableTower(id, pos[0], pos[1], pos[0], pos[1]))
 		}
 	}
 
 	private handleServerSetUnitPosition = (message: SetUnitPosition): void => {
-		const { position: pos, id } = message.SetUnitPosition
-		if (pos.length >= 2) {
-			this.gameWorld.setGameObjectWorldData(id, 'position', { x: pos[0], z: pos[1], y: 0.1 })
-		}
+		// const { position: pos, id } = message.SetUnitPosition
+		// if (pos.length >= 2) {
+		// 	this.gameWorld.setGameObjectWorldData(id, 'position', { x: pos[0], z: pos[1], y: 0.1 })
+		// }
 	}
 
 	private handleServerSetUnitDestination = (message: SetUnitDestination): void => {
@@ -98,7 +98,7 @@ class Game {
 			Object.keys(resp).forEach((key) => {
 				const unit = resp[key]
 				if (unit.position.length >= 2) {
-					this.gameWorld.addGameObject(this.createMoveableTower(unit.id, unit.position[0], unit.position[1]))
+					this.gameWorld.addGameObject(this.createMoveableTower(unit.id, unit.position[0], unit.position[1], unit.destination[0], unit.destination[1]))
 				}
 			})
 		})
@@ -130,20 +130,24 @@ class Game {
 	}
 
 	private handleGameObjectReachedDestination = (obj: MoveableGameObject): void => {
-		this.gameStateDataService.setUnitPosition(obj.key, obj.worldData.position.x, obj.worldData.position.z)
+		// this.gameStateDataService.setUnitPosition(obj.key, obj.worldData.position.x, obj.worldData.position.z)
 	}
 
-	private createMoveableTower = (id: string, posX: number, posZ: number): IGameObject => this.createMoveableGameObject('tower', id, posX, posZ)
+	private createMoveableTower = (id: string, posX: number, posZ: number, desX: number, desZ: number): IGameObject => this.createMoveableGameObject('tower', id, posX, posZ, desX, desZ)
 
-	private createMoveableWell = (id: string, posX: number, posZ: number): IGameObject => this.createMoveableGameObject('well', id, posX, posZ)
+	private createMoveableWell = (id: string, posX: number, posZ: number, desX: number, desZ: number): IGameObject => this.createMoveableGameObject('well', id, posX, posZ, desX, desZ)
 
-	private createMoveableGameObject = (modelKey: keyof LoadedModels, id: string, posX: number, posZ: number): IGameObject => {
+	private createMoveableGameObject = (modelKey: keyof LoadedModels, id: string, posX: number, posZ: number, desX: number, desZ: number): IGameObject => {
 		const model = this.modelLoader.loadedModels[modelKey]
 		const gameObj = new MoveableGameObject(id, Object3DHelper.setShadows(model.object))
 		gameObj.destinationReached = this.handleGameObjectReachedDestination
 		gameObj.worldData.position.y = 0.1
 		gameObj.worldData.position.x = posX
 		gameObj.worldData.position.z = posZ
+		gameObj.worldData.destination.y = 0.1
+		gameObj.worldData.destination.x = desX
+		gameObj.worldData.destination.z = desZ
+
 		return gameObj
 	}
 }
