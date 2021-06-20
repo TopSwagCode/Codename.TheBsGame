@@ -16,7 +16,7 @@ pub fn remove_destination_on_arrival(
     let length_sqrt = (des_vec - pos_vec).length_squared();
     // Todo this needs to handle the velocity as well
     // This can currently overshoot the target then just oscillate
-    if length_sqrt < 1.0 {
+    if length_sqrt < 0.1 {
         println!("Removing velocity and destination");
         pos.x = des.x;
         pos.y = des.y;

@@ -25,36 +25,35 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 				}
 			}
 		}
-
 		super.update(time, delta)
 		// updateData('position')
 	}
 
-	private move(source: ICordinates, destination: ICordinates, delta: number): ICordinates {
-		return {
-			x: this.getDistanceToMove(source.x, destination.x, delta),
-			y: this.getDistanceToMove(source.y, destination.y, delta),
-			z: this.getDistanceToMove(source.z, destination.z, delta)
+	private move(source: ICordinates, destination: ICordinates, frameDeltaTimeInSeconds: number): ICordinates {
+		const direction = {
+			x: destination.x - source.x,
+			y: destination.y - source.y,
+			z: destination.z - source.z
 		}
-	}
-
-	private getDistanceToMove = (source: number, destination: number, delta: number): number => {
-		let newPostion: number = source
-		let moveDistance = delta * this.movementSpeed
-		const diff = Math.abs(destination - source)
-		if (diff === 0) {
+		const posToDesLength = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+		if (posToDesLength === 0) {
+			return source
+		}
+		const velocity = {
+			x: (direction.x / posToDesLength) * frameDeltaTimeInSeconds * this.movementSpeed,
+			y: (direction.y / posToDesLength) * frameDeltaTimeInSeconds * this.movementSpeed,
+			z: (direction.z / posToDesLength) * frameDeltaTimeInSeconds * this.movementSpeed
+		}
+		const velocityMagnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z)
+		if (posToDesLength < velocityMagnitude) {
 			return destination
 		}
-		if (diff < moveDistance) {
-			moveDistance = diff
+
+		return {
+			x: velocity.x + source.x,
+			y: velocity.y + source.y,
+			z: velocity.z + source.z
 		}
-		if (source > destination) {
-			newPostion = source - moveDistance
-		}
-		if (source < destination) {
-			newPostion = source + moveDistance
-		}
-		return newPostion
 	}
 }
 export default MoveableGameObject

@@ -1,7 +1,6 @@
 use crate::game::components::Destination;
 use crate::game::components::Position;
 use crate::game::components::UnitId;
-use crate::game::components::Velocity;
 // #![windows_subsystem = "windows"]
 use crate::game::game_state::GameStateCache;
 use crate::game::game_state::Unit;
@@ -17,7 +16,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{mpsc, RwLock};
-use uuid::Uuid;
 use warp::{ws::Message, Filter, Rejection};
 
 mod game;
@@ -45,12 +43,6 @@ async fn main() {
     let game_state_cache_ref = game_state.clone();
     thread::spawn(move || {
         let mut world = World::default();
-        let uuid = Uuid::new_v4().to_string();
-        world.push((
-            Position { x: 1., y: 1. },
-            Velocity { dx: 0.5, dy: 1.0 },
-            UnitId { id: uuid },
-        ));
         let mut schedule = create_schedule();
 
         let mut resources = Resources::default();
