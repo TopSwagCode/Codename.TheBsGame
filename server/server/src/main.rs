@@ -1,14 +1,8 @@
-use game_logic::components::Destination;
-use game_logic::components::Position;
-use game_logic::components::UnitId;
+use game_logic::GameLogic;
 // #![windows_subsystem = "windows"]
-use game_logic::game_state::GameStateCache;
-use game_logic::game_state::UidEntityMap;
-use game_logic::game_state::Unit;
-use game_logic::resources::TimeResource;
-use game_logic::schedule::create_schedule;
 use futures::FutureExt;
 use game_logic::commands::GameCommand;
+use game_logic::game_state::GameStateCache;
 use legion::systems::CommandBuffer;
 use legion::*;
 use std::collections::HashMap;
@@ -27,7 +21,6 @@ type Clients = Arc<RwLock<HashMap<String, Client>>>;
 type GameStateRef = Arc<RwLock<GameStateCache>>;
 type GameCommandSender = mpsc::Sender<GameCommand>;
 
-
 #[derive(Debug, Clone)]
 pub struct Client {
     pub user_id: usize,
@@ -41,62 +34,37 @@ async fn main() {
 
     let game_state_cache_ref = game_state.clone();
     thread::spawn(move || {
-        let mut world = World::default();
-        let mut schedule = create_schedule();
-
-        let mut resources = Resources::default();
-        resources.insert(TimeResource::default());
-        resources.insert(UidEntityMap::default());
-
+        let mut game_logic = GameLogic::new();
         loop {
             let before = SystemTime::now();
             {
-                let mut command_buffer = CommandBuffer::new(&world);
+                let mut command_buffer = CommandBuffer::new(&game_logic.world);
 
                 while let Some(Some(command)) = receiver.recv().fuse().now_or_never() {
                     if matches!(command, GameCommand::ResetGameCommand) {
-                        world = World::default();
+                        game_logic.world = World::default();
                     } else {
                         // The extra 1 here, is to get around bug that you need 2 components when pushing to buffer
                         command_buffer.push((command, 1));
                     }
                 }
-                command_buffer.flush(&mut world, &mut resources);
+                command_buffer.flush(&mut game_logic.world, &mut game_logic.resources);
             }
-            schedule.execute(&mut world, &mut resources);
-            let elapsed_duration = before.elapsed().unwrap();
-            let mut time = resources
-                .get_mut::<TimeResource>()
-                .expect("Must have a time resource");
-            time.ticks += 1;
+            game_logic.execute();
 
-            let mut new_game_state_cache = GameStateCache::default();
-            <(&Position, Option<&Destination>, &UnitId)>::query().for_each(
-                &world,
-                |(pos, des_op, id)| {
-                    let des = des_op.map(|s| (s.x, s.y)).unwrap_or((pos.x, pos.y));
-                    new_game_state_cache.units.insert(
-                        id.id.clone(),
-                        Unit {
-                            destination: des,
-                            position: (pos.x, pos.y),
-                            id: id.id.clone(),
-                        },
-                    );
-                },
-            );
+            let new_game_state_cache = game_logic.generate_game_state_cache();
             {
                 // This block_on is used to make the game thread block on an async.
                 // We don't want the game thread to use async, since it will require it to
                 let mut lock = futures::executor::block_on(game_state_cache_ref.write());
                 lock.units = new_game_state_cache.units;
             }
-
+            let elapsed_duration = before.elapsed().unwrap();
             let target_interval = Duration::from_secs(1);
             if elapsed_duration.le(&target_interval) {
                 thread::sleep(target_interval - elapsed_duration);
             }
-            time.elapsed_seconds = before.elapsed().unwrap().as_secs_f64();
+            game_logic.set_elapsed_seconds(before.elapsed().unwrap().as_secs_f64());
         }
     });
 
