@@ -29,7 +29,7 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 		// updateData('position')
 	}
 
-	private move(source: ICordinates, destination: ICordinates, delta: number): ICordinates {
+	private move(source: ICordinates, destination: ICordinates, frameDeltaTimeInSeconds: number): ICordinates {
 		const direction = {
 			x: destination.x - source.x,
 			y: destination.y - source.y,
@@ -40,9 +40,9 @@ class MoveableGameObject extends GameObject implements IMoveableGameObject {
 			return source
 		}
 		const velocity = {
-			x: (direction.x / posToDesLength) * delta * this.movementSpeed,
-			y: (direction.y / posToDesLength) * delta * this.movementSpeed,
-			z: (direction.z / posToDesLength) * delta * this.movementSpeed
+			x: (direction.x / posToDesLength) * frameDeltaTimeInSeconds * this.movementSpeed,
+			y: (direction.y / posToDesLength) * frameDeltaTimeInSeconds * this.movementSpeed,
+			z: (direction.z / posToDesLength) * frameDeltaTimeInSeconds * this.movementSpeed
 		}
 		const velocityMagnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z)
 		if (posToDesLength < velocityMagnitude) {
