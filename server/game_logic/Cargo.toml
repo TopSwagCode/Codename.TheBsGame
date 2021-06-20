@@ -1,0 +1,17 @@
+[package]
+name = "game_logic"
+version = "0.1.0"
+edition = "2018"
+
+
+[lib]
+name = "game_logic"
+
+
+[dependencies]
+# Entity Component system, used for the game loop
+legion = "0.4"
+# For 2d math
+vector2d = "2.2"
+# serilization/deserilization Framework
+serde = { version = "1.0", features = ["derive"] }

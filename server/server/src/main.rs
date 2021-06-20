@@ -1,13 +1,14 @@
-use crate::game::components::Destination;
-use crate::game::components::Position;
-use crate::game::components::UnitId;
+use game_logic::components::Destination;
+use game_logic::components::Position;
+use game_logic::components::UnitId;
 // #![windows_subsystem = "windows"]
-use crate::game::game_state::GameStateCache;
-use crate::game::game_state::Unit;
-use crate::game::resources::TimeResource;
-use crate::game::schedule::create_schedule;
+use game_logic::game_state::GameStateCache;
+use game_logic::game_state::UidEntityMap;
+use game_logic::game_state::Unit;
+use game_logic::resources::TimeResource;
+use game_logic::schedule::create_schedule;
 use futures::FutureExt;
-use game::commands::GameCommand;
+use game_logic::commands::GameCommand;
 use legion::systems::CommandBuffer;
 use legion::*;
 use std::collections::HashMap;
@@ -18,7 +19,6 @@ use std::time::{Duration, SystemTime};
 use tokio::sync::{mpsc, RwLock};
 use warp::{ws::Message, Filter, Rejection};
 
-mod game;
 mod handler;
 mod ws;
 
@@ -27,7 +27,6 @@ type Clients = Arc<RwLock<HashMap<String, Client>>>;
 type GameStateRef = Arc<RwLock<GameStateCache>>;
 type GameCommandSender = mpsc::Sender<GameCommand>;
 
-type UidEntityMap = HashMap<String, Entity>;
 
 #[derive(Debug, Clone)]
 pub struct Client {

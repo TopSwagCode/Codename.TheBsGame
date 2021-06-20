@@ -1,5 +1,5 @@
-use crate::game::components::{Destination, Position, Velocity};
-use crate::game::resources::TimeResource;
+use crate::components::{Destination, Position, Velocity};
+use crate::resources::TimeResource;
 use legion::*;
 use legion::{system, systems::CommandBuffer, world::SubWorld, Entity};
 use vector2d::Vector2D;

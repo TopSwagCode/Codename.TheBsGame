@@ -1,6 +1,6 @@
 use legion::Schedule;
 
-use crate::game::systems::*;
+use crate::systems::*;
 
 pub fn create_schedule() -> Schedule{
     Schedule::builder()

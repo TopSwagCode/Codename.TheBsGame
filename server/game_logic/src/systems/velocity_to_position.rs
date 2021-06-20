@@ -1,6 +1,6 @@
 use legion::system;
 
-use crate::game::{components::{Position, Velocity}, resources::TimeResource};
+use crate::{components::{Position, Velocity}, resources::TimeResource};
 
 #[system(par_for_each)]
 pub fn velocity_to_position(pos: &mut Position, vel: &Velocity, #[resource] time: &TimeResource) {

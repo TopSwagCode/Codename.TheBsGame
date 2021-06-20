@@ -1,11 +1,9 @@
-use crate::{
-    game::{self, game_state::Unit},
-    Client, Clients, GameCommandSender,
-};
+use crate::{Client, Clients, GameCommandSender};
 
 use futures::{FutureExt, StreamExt};
+use game_logic::{self, game_state::Unit};
 use serde::{Deserialize, Serialize};
-use serde_json::{to_string,from_str};
+use serde_json::{from_str, to_string};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
@@ -126,29 +124,29 @@ async fn handle_request(message: &str, sender: GameCommandSender) -> Option<Stri
                 destination: position,
                 id: uuid,
             };
-            let unit_response = ResponseType::CreateUnit(unit.clone());            
+            let unit_response = ResponseType::CreateUnit(unit.clone());
             let response_string = to_string(&unit_response).expect("Should be able to respond");
             sender
-                .send(game::commands::GameCommand::CreateUnitCommand {                    
-                    unit,
-                })
+                .send(game_logic::commands::GameCommand::CreateUnitCommand { unit })
                 .await
                 .expect("Should be able to send");
             Some(response_string)
         }
         Ok(SetUnitDestination(SetUnitDestinationRequest { id, destination })) => {
             sender
-                .send(game::commands::GameCommand::SetUnitDestinationCommand {
-                    position: destination,
-                    uuid: id,
-                })
+                .send(
+                    game_logic::commands::GameCommand::SetUnitDestinationCommand {
+                        position: destination,
+                        uuid: id,
+                    },
+                )
                 .await
                 .expect("Should be able to send");
             Some(message.to_string())
         }
         Ok(RequestType::ResetGame) => {
             sender
-                .send(game::commands::GameCommand::ResetGameCommand)
+                .send(game_logic::commands::GameCommand::ResetGameCommand)
                 .await
                 .expect("Could not send message");
             None

@@ -1,6 +1,12 @@
 use legion::{system, systems::CommandBuffer, world::SubWorld, Entity, EntityStore};
 
-use crate::{UidEntityMap, game::{commands::GameCommand, components::{Destination, Position, UnitId}, game_state::Unit}};
+use crate::{
+    commands::GameCommand,
+    components::{Destination, Position, UnitId},
+    game_state::Unit,
+};
+use crate::game_state::UidEntityMap;
+
 
 #[system(for_each)]
 #[write_component(Destination)]
@@ -12,7 +18,9 @@ pub fn handle_commands(
     command_buffer: &mut CommandBuffer,
 ) {
     match game_command {
-        GameCommand::CreateUnitCommand { unit:Unit{ position, id,..}} => {
+        GameCommand::CreateUnitCommand {
+            unit: Unit { position, id, .. },
+        } => {
             let new_entity = command_buffer.push((
                 Position {
                     x: position.0,
