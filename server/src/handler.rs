@@ -19,8 +19,7 @@ pub struct RegisterRequest {
 }
 
 pub async fn get_game_state_handler(game_state: GameStateRef) -> Result<impl Reply> {
-    let game_state = &game_state.read().await.units;
-    let json = json(&game_state);
+    let json = game_state.read().await.to_string();    
     Ok(json)
 }
 

@@ -10,6 +10,7 @@ use futures::FutureExt;
 use game::commands::GameCommand;
 use legion::systems::CommandBuffer;
 use legion::*;
+use serde_json::to_string;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
@@ -24,7 +25,7 @@ mod ws;
 
 type Result<T> = std::result::Result<T, Rejection>;
 type Clients = Arc<RwLock<HashMap<String, Client>>>;
-type GameStateRef = Arc<RwLock<GameStateCache>>;
+type GameStateRef = Arc<RwLock<String>>;
 type GameCommandSender = mpsc::Sender<GameCommand>;
 
 type UidEntityMap = HashMap<String, Entity>;
@@ -37,7 +38,7 @@ pub struct Client {
 
 #[tokio::main]
 async fn main() {
-    let game_state = Arc::new(RwLock::new(GameStateCache::default()));
+    let game_state = Arc::new(RwLock::new(String::default()));
     let (sender, mut receiver) = mpsc::channel::<GameCommand>(1000);
 
     let game_state_cache_ref = game_state.clone();
@@ -87,10 +88,11 @@ async fn main() {
                 },
             );
             {
+                let json_string = to_string(&new_game_state_cache.units).unwrap();
                 // This block_on is used to make the game thread block on an async.
                 // We don't want the game thread to use async, since it will require it to
                 let mut lock = futures::executor::block_on(game_state_cache_ref.write());
-                lock.units = new_game_state_cache.units;
+                *lock = json_string;
             }
 
             let target_interval = Duration::from_secs(1);
