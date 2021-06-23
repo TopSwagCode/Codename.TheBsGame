@@ -6,6 +6,9 @@ edition = "2018"
 [lib]
 name = "game_logic"
 
+[features]
+wasm-bindgen = ["legion/wasm-bindgen"]
+
 [dependencies]
 # Entity Component system, used for the game loop
 legion = "0.4"
