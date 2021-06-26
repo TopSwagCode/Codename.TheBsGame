@@ -23,7 +23,7 @@
 		"prettier",
 		"plugin:prettier/recommended" // Make sure this is always the last element in the array.
 	],
-	"plugins": ["react","react-hooks", "prettier", "@typescript-eslint", "import", "jsx-a11y"],
+	"plugins": ["react", "react-hooks", "prettier", "@typescript-eslint", "import", "jsx-a11y"],
 	"parser": "@typescript-eslint/parser",
 	"parserOptions": {
 		"ecmaFeatures": {
@@ -35,6 +35,7 @@
 	},
 
 	"rules": {
+		"import/no-unresolved": [2, { "caseSensitive": false }],
 		"prettier/prettier": ["error", {}, { "usePrettierrc": true }],
 		"no-use-before-define": "off",
 		"@typescript-eslint/no-use-before-define": ["off"],
