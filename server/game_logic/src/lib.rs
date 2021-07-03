@@ -15,15 +15,26 @@ pub mod schedule;
 pub mod systems;
 
 pub struct GameLogic {
-    pub world: World,
-    pub schedule: Schedule,
-    pub resources: Resources,
+    pub(crate) world: World,
+    pub(crate) schedule: Schedule,
+    pub(crate) resources: Resources,
 }
 
 impl Default for GameLogic {
     fn default() -> Self {
         GameLogic::new()
     }
+}
+
+pub trait GameLogicTrait<'a, 'b> {
+    fn execute(&mut self);
+    fn generate_game_state_cache(&self) -> GameStateCache;
+    fn set_elapsed_seconds(&mut self, elapsed_seconds: f64);
+    fn handle_commands(&mut self, commands: Vec<GameCommand>);
+    fn ticks(&self) -> u64;
+    fn query_changed_units(&'b self) -> Vec<UnitInfo<'a>>
+    where
+        'b: 'a; // self(the game) must live longer than the data we get out of this iterator
 }
 
 impl GameLogic {
@@ -41,8 +52,12 @@ impl GameLogic {
             resources,
         }
     }
+}
 
-    pub fn execute(&mut self) {
+type UnitInfo<'a> = (&'a Position, Option<&'a Destination>, &'a UnitId);
+
+impl<'a, 'b> GameLogicTrait<'a, 'b> for GameLogic {
+    fn execute(&mut self) {
         self.schedule.execute(&mut self.world, &mut self.resources);
         let mut time = self
             .resources
@@ -51,7 +66,7 @@ impl GameLogic {
         time.ticks += 1;
     }
 
-    pub fn generate_game_state_cache(&self) -> GameStateCache {
+    fn generate_game_state_cache(&self) -> GameStateCache {
         let mut new_game_state_cache = GameStateCache::default();
         <(&Position, Option<&Destination>, &UnitId)>::query().for_each(
             &self.world,
@@ -70,7 +85,7 @@ impl GameLogic {
         new_game_state_cache
     }
 
-    pub fn set_elapsed_seconds(&mut self, elapsed_seconds: f64) {
+    fn set_elapsed_seconds(&mut self, elapsed_seconds: f64) {
         let mut time = self
             .resources
             .get_mut::<TimeResource>()
@@ -78,7 +93,7 @@ impl GameLogic {
         time.elapsed_seconds = elapsed_seconds;
     }
 
-    pub fn handle_commands(&mut self, commands: Vec<GameCommand>) {
+    fn handle_commands(&mut self, commands: Vec<GameCommand>) {
         let mut command_buffer = CommandBuffer::new(&self.world);
         for command in commands {
             if matches!(command, GameCommand::ResetGameCommand) {
@@ -89,5 +104,21 @@ impl GameLogic {
             }
         }
         command_buffer.flush(&mut self.world, &mut self.resources);
+    }
+
+    fn ticks(&self) -> u64 {
+        self.resources
+            .get::<TimeResource>()
+            .expect("Must have a time resource")
+            .ticks
+    }
+
+    fn query_changed_units(&'b self) -> Vec<UnitInfo<'a>>
+    where
+        'b: 'a, // self(the game) must live longer than the data we get out of this iterator
+    {
+        let mut query = <(&Position, Option<&Destination>, &UnitId)>::query()
+            .filter(maybe_changed::<Position>());
+        query.iter(&self.world).collect()
     }
 }

@@ -18,12 +18,21 @@ pub fn handle_commands(
 ) {
     match game_command {
         GameCommand::CreateUnitCommand {
-            unit: Unit { position, id, .. },
+            unit:
+                Unit {
+                    position,
+                    id,
+                    destination,
+                },
         } => {
             let new_entity = command_buffer.push((
                 Position {
                     x: position.0,
                     y: position.1,
+                },
+                Destination {
+                    x: destination.0,
+                    y: destination.1,
                 },
                 UnitId { id: id.clone() },
             ));

@@ -1,0 +1,12 @@
+[package]
+name = "thebsgame-wasm"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+game_logic = { path = "../game_logic", features = ["wasm-bindgen"] }
+wasm-bindgen = { version = "0.2.74", features = ["serde-serialize"] }
+serde = { version = "1.0", features = ["derive"] }

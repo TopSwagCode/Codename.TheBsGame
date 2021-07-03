@@ -1,4 +1,4 @@
-use game_logic::GameLogic;
+use game_logic::{GameLogic, GameLogicTrait};
 // #![windows_subsystem = "windows"]
 use futures::FutureExt;
 use game_logic::commands::GameCommand;
